@@ -1,0 +1,65 @@
+﻿[
+    {
+        "parent": "home",
+        "page": "home",
+        "icon": ":/images/colorful/home.png",
+        "title": "首页",
+        "description": "欢迎回来!"
+    },
+    {
+        "parent": "home",
+        "page": "dashboard",
+        "icon": ":/images/colorful/economy.png",
+        "title": "仪表盘",
+        "description": "看看最近的数据发生了什么变化"
+    },
+    {
+        "parent": "goods",
+        "page": "goods_list",
+        "icon": ":/images/colorful/shopping.png",
+        "title": "商品列表",
+        "description": "查看 编辑 修改和导出商品"
+    },
+    {
+        "parent": "goods",
+        "page": "category_inform",
+        "icon": ":/images/colorful/menu.png",
+        "title": "商品分类详情",
+        "description": "品类商品占比 品牌销售占比 品牌货品缺失"
+    },
+    {
+        "parent": "orders",
+        "page": "orders_list",
+        "icon": ":/images/colorful/order.png",
+        "title": "订单列表",
+        "description": "查询订单信息 查看订单详情"
+    },
+    {
+        "parent": "import",
+        "page": "import",
+        "icon": ":/images/colorful/ai.png",
+        "title": "智能识别信息导入",
+        "description": "批量新增 款式/订单/退款 等信息"
+    },
+    {
+        "parent": "analysis",
+        "page": "summary",
+        "icon": ":/images/colorful/data.png",
+        "title": "数据汇总报表",
+        "description": "查看规整到月的销售报表"
+    },
+    {
+        "parent": "analysis",
+        "page": "analysis_task",
+        "icon": ":/images/colorful/list.png",
+        "title": "销售分析任务",
+        "description": "创建/管理/查看销售分析任务"
+    },
+    {
+        "parent": "analysis",
+        "page": "analysis_refunds",
+        "icon": ":/images/colorful/shopping.png",
+        "title": "单品销售及售后分析",
+        "description": "查看 逆向运费/商品的销售数量 排名 售后等信息"
+    }
+]

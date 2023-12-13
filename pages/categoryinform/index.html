@@ -1,0 +1,367 @@
+﻿<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>categoryinform.html</title>
+    <script src="qrc:///pages/src/vue.global.js"></script>
+    <link rel="stylesheet" href="qrc:///pages/src/tdesign.min.css" />
+    <script src="qrc:///pages/src/tdesign.min.js"></script>
+    <link rel="stylesheet" href="qrc:///pages/src/windows-app.css" />
+    <link rel="stylesheet" href="qrc:///pages/src/global.css" />
+    <script src="qrc:///pages/src/dayjs.min.js"></script>
+    <style>
+        .t-col{
+            margin-top: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <t-loading v-show="loading" text="商品分类详情数据加载中..." size="small" style="height: 90vh; width: 100%;"></t-loading>
+        <div class="main-content" v-show="!loading">
+            <t-row :gutter="[12, 12]">
+                <t-col :span="12">
+                    <div class="illustrate">
+                        <div>
+                            ⭕销售取值时间：{{ date[0] }} - {{ date[1] }}
+                        </div>
+                        <div>
+                            ⭕商品取值条件：喵街上下架状态 = 上架 或者 商品录入时间 > {{ date[2] }} (180天内)。
+                        </div>
+                        <div>
+                            ⭕货品补充条件：1*商品款数占总商品款数比例/1*销售款数占总销售款数比例
+                        </div>
+                    </div>
+                </t-col>
+                <t-col :span="12">
+                    <t-card :bordered="false">
+                        <t-table
+                        v-model:displayColumns="displayColumns"
+                        size="small"
+                        :loading="loading"
+                        :columns="columns"
+                        :data="res"
+                        bordered
+                        :pagination="false"
+                        @filter-change="onFilterChange"
+                        @sort-change="sortChange"
+                        :sort="sort"
+                        :foot-data="footData"
+                        show-sort-column-bg-color
+                        header-affixed-top
+                        :column-controller="{
+                            fields: ['name-show', 'stylenumber', 'stylenumber-proportion-show', 'productnumber', 'barcode', 'already-saled-stylenumber', 'turnover-rate-show', 'sales-count', 'sales-amount', 'after-sale-count', 'after-sale-amount', 'saled-stylenumber-rate-show', 'need-style-show'],
+                            dialogProps: {
+                                preventScrollThrough: true,
+                                showInAttachedElement: true
+                            },
+                            buttonProps: false
+                        }"
+                        @column-change="onColumnChange"
+                        >
+                            <template #name-show="{ row }">
+                                {{ row.category }}
+                            </template>
+                            <template #stylenumber-proportion-show="{ row }">
+                                <t-progress
+                                size="small"
+                                :percentage="(row['stylenumber-proportion'] * 100).toFixed(2)"
+                                :style="{
+                                    width: '100%'
+                                }"
+                                ></t-progress>
+                            </template>
+                            <template #turnover-rate-show="{ row }">
+                                <t-progress
+                                size="small"
+                                :percentage="(row['turnover-rate'] * 100).toFixed(2)"
+                                :style="{
+                                    width: '100%'
+                                }"
+                                ></t-progress>
+                            </template>
+                            <template #saled-stylenumber-rate-show="{ row }">
+                                {{ (row['saled-stylenumber-rate'] * 100).toFixed(2) + '%' }}
+                            </template>
+                            <template #need-style-show="{ row }">
+                                <span v-if="row['need-style']">
+                                    <t-tag size="small" theme="warning">是</t-tag>
+                                </span>
+                            </template>
+                        </t-table>
+                    </t-card>
+                </t-col>
+            </t-row>
+        </div>
+    </div>
+    <script src="qrc:///pages/js/qwebchannel.js"></script>
+    <script type="text/javascript">
+        let app, chart
+
+        function createPage(serve_host, store, brand, displayColumns = '["name-show","stylenumber","stylenumber-proportion-show","productnumber","barcode","already-saled-stylenumber","turnover-rate-show","sales-count","sales-amount","after-sale-count","after-sale-amount","saled-stylenumber-rate-show","need-style-show","stylenumber"]'){
+            document.querySelector('#app').style.display = 'block'
+            displayColumns = JSON.parse(displayColumns)
+
+            app = Vue.createApp({
+                data() {
+                    return {
+                        res: [],
+                        resdata: [],
+                        loading: false,
+                        sort: false,
+                        key: 0,
+                        date: [
+                            dayjs().subtract(97, 'day').format('YYYY年MM月DD日'),
+                            dayjs().subtract(7, 'day').format('YYYY年MM月DD日'),
+                            dayjs().subtract(180, 'day').format('YYYY年MM月DD日')
+                        ],
+                        displayColumns,
+                        columns: [
+                            {
+                                title: '叶子类目',
+                                colKey: 'name-show',
+                                width: 150,
+                                filter: {
+                                    type: 'input',
+                                    resetValue: '',
+                                    confirmEvents: ['onEnter'],
+                                    showConfirmAndReset: true
+                                },
+                            },
+                            {
+                                title: '款式数量',
+                                colKey: 'stylenumber',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 100
+                            },
+                            {
+                                title: '款式数量占比',
+                                colKey: 'stylenumber-proportion-show',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 150
+                            },
+                            {
+                                title: '货号数量',
+                                colKey: 'productnumber',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 100
+                            },
+                            {
+                                title: '条码数量',
+                                colKey: 'barcode',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 100
+                            },
+                            {
+                                title: '动销款式数量',
+                                colKey: 'already-saled-stylenumber',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 100
+                            },
+                            {
+                                title: '动销率',
+                                colKey: 'turnover-rate-show',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 180
+                            },
+                            {
+                                title: '销售数量',
+                                colKey: 'sales-count',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 100
+                            },
+                            {
+                                title: '销售金额',
+                                colKey: 'sales-amount',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 100
+                            },
+                            {
+                                title: '售后数量',
+                                colKey: 'after-sale-count',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 100
+                            },
+                            {
+                                title: '售后金额',
+                                colKey: 'after-sale-amount',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 100
+                            },
+                            {
+                                title: '销售数量占比',
+                                colKey: 'saled-stylenumber-rate-show',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 100
+                            },
+                            {
+                                title: '款式缺失',
+                                colKey: 'need-style-show',
+                                width: 100
+                            }
+                        ],
+                        footData: []
+                    }
+                },
+                methods: {
+                    getData: async () => {
+                        let date = new Date()
+                        date.setDate(date.getDate() - 1)
+                        app.dateIs = date.toISOString().split("T")[0]
+
+                        return fetch(serve_host + "/goods/category/inform?store-id=" + store + "&brand=" + brand)
+                        .then((response) => {
+                            return Promise.resolve(response.json())
+                        })
+                    },
+                    initData: async () => {
+                        app.res = []
+                        app.resdata = []
+                        app.loading = true
+                        let response = await app.getData()
+
+                        const currentData = {
+                            "category": null,
+                            "stylenumber": 0,
+                            "productnumber": 0,
+                            "barcode": 0,
+                            "sales-count": 0,
+                            "sales-amount": 0,
+                            "after-sale-count": 0,
+                            "after-sale-amount": 0,
+                            "already-saled-stylenumber": 0,
+                            "turnover-rate": 0,
+                            "stylenumber-proportion": 0,
+                            "saled-stylenumber-rate": 0,
+                            "need-style": false
+                        }
+
+                        for (let i = 0; i < response.data.length; i++) {
+                            let item = new Object
+                            for (const key in currentData) {
+                                if(!response.data[i][key]){
+                                    item[key] = currentData[key]
+                                } else {
+                                    item[key] = response.data[i][key]
+                                }
+                            }
+                            app.res.push(item)
+                            app.resdata.push(item)
+                        }
+
+                        setTimeout(() => {
+                            app.footDataDul()
+                            app.loading = false
+
+                            new QWebChannel(qt.webChannelTransport, function(channel) {
+                                channel.objects.webobj.show();
+                            })
+                        }, 100)
+                    },
+                    onFilterChange: (filters) => {
+                        app.res = JSON.parse(JSON.stringify(app.resdata))
+
+                        let newData = []
+                        for (let i = 0; i < app.res.length; i++) {
+                            let res = true
+                            for (const key in filters) {
+                                if (key == 'name' && filters[key] !== '') {
+                                    if(!app.res[i][key] || app.res[i][key].indexOf(filters[key]) < 0){
+                                        res = false
+                                    }
+                                }
+                            }
+                            if(res){
+                                newData.push(app.res[i])
+                            }
+                        }
+
+                        app.res = newData
+                    },
+                    sortChange: (val) => {
+                        app.sort = val
+
+                        if(!val || val == undefined){
+                            val = { sortBy: 'stylenumber', descending: true }
+                        }
+
+                        let sortBy
+                        if(val.sortBy.substr(val.sortBy.length - 4, 4) == "show"){
+                            sortBy = val.sortBy.substr(0, val.sortBy.length - 5)
+                        } else {
+                            sortBy = val.sortBy
+                        }
+
+                        for (let i = 0; i < app.res.length; i++) {
+                            for (let t = i + 1; t < app.res.length; t++) {
+                                let a = app.res[i][sortBy] * 1
+                                let b = app.res[t][sortBy] * 1
+
+                                if(val.descending){
+                                    if(a < b){
+                                        let tp1 = app.res[i]
+                                        app.res[i] = app.res[t]
+                                        app.res[t] = tp1
+                                    }
+                                }
+                                if(!val.descending){
+                                    if(a > b){
+                                        let tp2 = app.res[i]
+                                        app.res[i] = app.res[t]
+                                        app.res[t] = tp2
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    footDataDul: () => {
+                        let countData = {
+                            'name-show': '合计/平均'
+                        }
+                        app.res.forEach(record => {
+                            for (const key in record) {
+                                if((typeof(record[key]) == 'number' && !isNaN(record[key])) && key != 'turnover-rate'){
+                                    if(countData[key]){
+                                        countData[key] = (countData[key] * 1 + record[key] * 1).toFixed(2) * 1
+                                    } else {
+                                        countData[key] = (record[key] * 1).toFixed(2) * 1
+                                    }
+                                }
+                                if(key == 'turnover-rate'){
+                                    countData['turnover-rate-show'] = (countData['already-saled-stylenumber'] / countData.stylenumber * 100).toFixed(2) + "%"
+                                }
+                            }
+                        })
+
+                        app.footData = [
+                            countData
+                        ]
+                    },
+                    onColumnChange: (value) => {
+                        new QWebChannel(qt.webChannelTransport, function(channel) {
+                            channel.objects.webobj.storage('COLUMNS_SET', 'CATEGORY_INFORM_TABLE', JSON.stringify(value.columns))
+                        })
+                    }
+                }
+            }).use(TDesign).mount('#app')
+
+            app.initData()
+        }
+    </script>
+</body>
+
+</html>

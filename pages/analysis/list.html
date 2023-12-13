@@ -1,0 +1,544 @@
+﻿<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>list.html</title>
+    <script src="qrc:///pages/src/vue.global.js"></script>
+    <link rel="stylesheet" href="qrc:///pages/src/tdesign.min.css" />
+    <script src="qrc:///pages/src/tdesign.min.js"></script>
+    <link rel="stylesheet" href="qrc:///pages/src/windows-app.css" />
+    <link rel="stylesheet" href="qrc:///pages/src/global.css" />
+    <script src="qrc:///pages/src/echarts.js"></script>
+    <script src="qrc:///pages/src/dayjs.min.js"></script>
+    <style>
+        .t-tag{
+            margin: 2px;
+        }
+        .top-bar{
+            background: var(--td-bg-color-container);
+            border-radius: 7px;
+            border: #dddddd 1px solid;
+            padding: 5px 15px;
+        }
+        .top-bar .t-anchor__line{
+            display: none;
+        }
+        .top-bar .t-anchor{
+            width: auto!important;
+        }
+        .top-bar .t-anchor__item{
+            display: inline-block;
+        }
+        .top-bar .t-anchor__item{
+        line-height: 24px;
+        padding: 2px 8px;
+        }
+        .top-bar .t-anchor__item-link{
+            vertical-align: middle;
+        }
+        .title{
+            font-size: 10px;
+            color: #aaa;
+        }
+        .t-card{
+            margin-top: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div class="main-content">
+            <t-affix :offset-top="15">
+                <div class="top-bar">
+                    <span :style="{
+                        lineHeight: '30px'
+                    }">
+                        <icon-clock-circle />
+                        选择日期：
+                    </span>
+                    <t-date-range-picker
+                    size="small"
+                    v-model="date"
+                    :style="{
+                        width: '320px'
+                    }"
+                    @change="initData"
+                    allow-input
+                    clearable
+                    >
+                    </t-date-range-picker>
+                </div>
+            </t-affix>
+            <t-card v-if="freight" title="REFUNDS REVERSE FREIGHT 逆向运费统计" :bordered="false">
+                <t-row>
+                    <t-col :span="3" class="title">
+                        承担数量
+                    </t-col>
+                    <t-col :span="3" class="title">
+                        承担金额
+                    </t-col>
+                    <t-col :span="3" class="title">
+                        实际销售数量
+                    </t-col>
+                    <t-col :span="3" class="title">
+                        实销平均承担金额
+                    </t-col>
+                    <t-col :span="3">
+                        {{ freight.allRefundsCount }}
+                    </t-col>
+                    <t-col :span="3">
+                        {{ freight.allRefundsFreight }}
+                    </t-col>
+                    <t-col :span="3">
+                        {{ freight.allSalesCount }}
+                    </t-col>
+                    <t-col :span="3">
+                        {{ freight.aveShipBorneSales }}
+                    </t-col>
+                </t-row>
+            </t-card>
+            <t-card
+            title="GOODS 单品数据表"
+            :bordered="false"
+            id="dtable"
+            >
+                <t-table
+                size="small"
+                :loading="loading"
+                :bordered="false"
+                :data="res"
+                :columns="columns"
+                :height="res.length < 8? 'auto':'calc(100vh - 340px)'"
+                :foot-data="footData"
+                @filter-change="onFilterChange"
+                :sort="sort"
+                @sort-change="sortChange"
+                show-sort-column-bg-color
+                :scroll="{ type: 'lazy', bufferSize: 20 }"
+                :header-affixed-top="{
+                    offsetTop: 30,
+                    contaiter: () => document.querySelector('#dtable')
+                }"
+                :footer-affixed-bottom="{
+                    offsetBottom: 15,
+                    contaiter: () => document.querySelector('#dtable')
+                }"
+                >
+                    <template #images="{ row }">
+                        <t-image
+                        v-if="row.image"
+                        :style="{
+                            width: '60px'
+                        }"
+                        @click="viewImage(row.image)"
+                        @load="cachingImage(row.image)"
+                        :src="row.image"
+                        ></t-image>
+                    </template>
+                    <template #product="{ row }">
+                        <span v-if="!row['miaostreet-id']">
+                            {{ row['name'] }}
+                        </span>
+                        <t-link v-if="row['miaostreet-id']" @click="openUrl('https://www.miaostreet.com/clmj/hybrid/miaojieWeex?pageName=goods-detail&itemId=' + row['miaostreet-id'])" :style="{
+                            fontSize: '12px'
+                        }">
+                            {{ row['name'] }}
+                        </t-link>
+                    </template>
+                    <template #changes="{ row }">
+                        <span v-if="row['changeRate'] * 100">
+                            {{ (row['changeRate'] * 100).toFixed(2) }}%
+                        </span>
+                    </template>
+                    <template #refunds="{ row }">
+                        <span v-if="row['refundsRate'] * 100">
+                            {{ (row['refundsRate'] * 100).toFixed(2) }}%
+                        </span>
+                    </template>
+                    <template #cancels="{ row }">
+                        <span v-if="row['cancelRate'] * 100">
+                            {{ (row['cancelRate'] * 100).toFixed(2) }}%
+                        </span>
+                    </template>
+                    <template #after-sales="{ row }">
+                        <span v-if="row['afterSaleRate'] * 100">
+                            {{ (row['afterSaleRate'] * 100).toFixed(2) }}%
+                        </span>
+                    </template>
+                    <template #tags="{ row }">
+                        <div
+                        v-for="value, key in row['tags']"
+                        :key="key"
+                        >
+                            <t-tag color="orange" size="small">
+                                {{ key.replace("【", "").replace("】","") }}
+                            </t-tag>
+                            x{{ value }}
+                        </div>
+                    </template>
+                    <template #reasons="{ row }">
+                        <div
+                        v-for="value, key in row['reasons']"
+                        :key="key"
+                        >
+                            <t-tag color="green" size="small"> 
+                                {{  key }}
+                            </t-tag>
+                            x{{ value }}
+                        </div>
+                    </template>
+                    <template #notes="{ row }">
+                        <t-button
+                        v-if="row['notes'] && row['notes'].length != 0 && row.stylenumber != '合计' && row['notes'][''] != '1'"
+                        type="primary"
+                        size="mini"
+                        @click="visible = row['notes']"
+                        >
+                            <template #icon>
+                                <icon-eye />
+                            </template>
+                            查看
+                        </t-button>
+                    </template>
+                </t-table>
+            </t-card>
+        </div>
+        <t-dialog
+        v-model:visible="visible"
+        :footer="false"
+        top="30vh"
+        draggable
+        >
+            <template #header>
+                <t-icon name="chat" :style="{
+                    marginRight: '5px'
+                }"></t-icon>
+                用户备注
+            </template>
+            <div :style="{
+                width: '100%',
+                maxHeight: '400px',
+                overflowX: 'hidden',
+                overflowY: 'auto'
+            }">
+                <t-list v-if="visible != 0" split>
+                    <t-list-item
+                    v-for="item, key in visible"
+                    :key="key"
+                    >
+                        {{ key }}
+                    </t-list-item>
+                </t-list>
+            </div>
+        </t-dialog>
+    </div>
+    <script src="qrc:///pages/js/qwebchannel.js"></script>
+    <script type="text/javascript">
+        let app
+
+        function createPage(serve_host, store, brand){
+            document.querySelector('#app').style.display = 'block'
+
+            app = Vue.createApp({
+                data() {
+                    return {
+                        res: [],
+                        data: [],
+                        loading: false,
+                        store,
+                        brand,
+                        freight: false,
+                        date: [
+                            dayjs().startOf('month'),
+                            dayjs().subtract(1, 'day')
+                        ],
+                        sort: false,
+                        footData: [],
+                        columns: [
+                            {
+                                title: '款号',
+                                colKey: 'stylenumber',
+                                align: 'center',
+                                width: 150,
+                                filter: {
+                                    type: 'input',
+                                    resetValue: '',
+                                    confirmEvents: ['onEnter'],
+                                    showConfirmAndReset: true
+                                },
+                                fixed: 'left'
+                            },
+                            {
+                                title: '图片',
+                                colKey: 'images',
+                                width: 80,
+                                filter: {
+                                    type: 'input',
+                                    resetValue: '',
+                                    confirmEvents: ['onEnter'],
+                                    showConfirmAndReset: true
+                                },
+                                fixed: 'left'
+                            },
+                            {
+                                title: '商品名称',
+                                colKey: 'product',
+                                filter: {
+                                    type: 'input',
+                                    resetValue: '',
+                                    confirmEvents: ['onEnter'],
+                                    showConfirmAndReset: true
+                                },
+                                width: 320
+                            },
+                            {
+                                title: '首次上架时间',
+                                colKey: 'first-listing-time',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 120
+                            },
+                            {
+                                title: '销售数量',
+                                colKey: 'salesCount',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 100
+                            },
+                            {
+                                title: '销售金额',
+                                colKey: 'salesAmount',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 100
+                            },
+                            {
+                                title: '退货数量',
+                                colKey: 'refundsCount',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 100
+                            },
+                            {
+                                title: '退货率',
+                                colKey: 'refunds',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 100
+                            },
+                            {
+                                title: '换货数量',
+                                colKey: 'changeCount',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 100
+                            },
+                            {
+                                title: '换货率',
+                                colKey: 'changes',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 100
+                            },
+                            {
+                                title: '取消订单数量',
+                                colKey: 'cancelCount',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 100
+                            },
+                            {
+                                title: '取消率',
+                                colKey: 'cancels',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 100
+                            },
+                            {
+                                title: '总售后率',
+                                colKey: 'after-sales',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 100
+                            },
+                            {
+                                title: '售后原因标签',
+                                colKey: 'tags',
+                                width: 240
+                            },
+                            {
+                                title: '售后申请原因',
+                                colKey: 'reasons',
+                                width: 300
+                            },
+                            {
+                                title: '售后用户备注',
+                                colKey: 'notes',
+                                width: 130
+                            }
+                        ],
+                        visible: false,
+                        tkey: 0
+                    }
+                },
+                methods: {
+                    getData: async (date) => {
+                        return fetch(serve_host + "/analysis/refunds/get?store-id=" + store + "&brand=" + brand + "&date=" + JSON.stringify([
+                            dayjs(date[0]).format('YYYY-MM-DD'),
+                            dayjs(date[1]).format('YYYY-MM-DD')
+                        ]) + "&start=0&number=9999")
+                        .then((response) => {
+                            return Promise.resolve(response.json())
+                        })
+                    },
+                    initData: async () => {
+                        app.loading = true
+                        let response = await app.getData(app.date)
+                        
+                        app.res = []
+                        app.data = []
+                        for (let i = 0; i < response.data.length; i++) {
+                            if(response.data[i]['main-image'] != null) {
+                                try {
+                                    let images = JSON.parse(response.data[i]['main-image'])
+                                    response.data[i].image = images[0];
+                                } catch {
+                                    //
+                                }
+                            }
+                            app.res.push(response.data[i])
+                            app.data.push(response.data[i])
+                        }
+
+                        app.intfootData()
+                        app.loading = false
+                        new QWebChannel(qt.webChannelTransport, function(channel) {
+                            channel.objects.webobj.show();
+                        })
+                    },
+                    getFreight: async (date) => {
+                        return fetch(serve_host + "/analysis/refunds/freight?store-id=" + store + "&brand=" + brand + "&date=" + JSON.stringify([
+                            dayjs(date[0]).format('YYYY-MM-DD'),
+                            dayjs(date[1]).format('YYYY-MM-DD')
+                        ]))
+                        .then((response) => {
+                            return Promise.resolve(response.json())
+                        })
+                    },
+                    initFreight: async () => {
+                        let response = await app.getFreight(app.date)
+                        app.freight = response
+                    },
+                    intfootData: () => {
+                        let countData = {}
+                        countData.stylenumber = '合计'
+
+                        app.res.forEach(row => {
+                            for (const key in row) {
+                                if(typeof(row[key]) == 'number' && !isNaN(row[key])){
+                                    if(countData[key]){
+                                        countData[key] = (countData[key] * 1 + row[key] * 1).toFixed(2) * 1
+                                    } else {
+                                        countData[key] = (row[key] * 1).toFixed(2) * 1
+                                    }
+                                }
+                            }
+                        })
+
+                        app.footData = [
+                            countData
+                        ]
+                    },
+                    sortChange: (val) => {
+                        app.sort = val
+                        if(!val || val == undefined){
+                            app.res = JSON.parse(JSON.stringify(app.data))
+                            app.tkey++
+                            return
+                        }
+                        if(val.sortBy == 'refunds'){
+                            val.sortBy = 'refundsRate'
+                        }
+                        if(val.sortBy == 'changes'){
+                            val.sortBy = 'changeRate'
+                        }
+                        if(val.sortBy == 'cancels'){
+                            val.sortBy = 'cancelRate'
+                        }
+                        if(val.sortBy == 'after-sales'){
+                            val.sortBy = 'afterSaleRate'
+                        }
+                        for (let i = 0; i < app.res.length; i++) {
+                            for (let t = i + 1; t < app.res.length; t++) {
+                                if(val.descending){
+                                    if(app.res[i][val.sortBy] < app.res[t][val.sortBy]){
+                                        let tp1 = app.res[i]
+                                        app.res[i] = app.res[t]
+                                        app.res[t] = tp1
+                                    }
+                                }
+                                if(!val.descending){
+                                    if(app.res[i][val.sortBy] > app.res[t][val.sortBy]){
+                                        let tp2 = app.res[i]
+                                        app.res[i] = app.res[t]
+                                        app.res[t] = tp2
+                                    }
+                                }
+                            }
+                        }
+                        app.tkey++
+                    },
+                    onFilterChange: (filters) => {
+                        app.res = JSON.parse(JSON.stringify(app.data))
+
+                        let newData = []
+                        for (let i = 0; i < app.res.length; i++) {
+                            let res = true
+                            for (const key in filters) {
+                                if (filters[key] !== '') {
+                                    if(key == 'first-listing-time'){
+                                        if(app.res[i][key] >= filters[key][1] || app.res[i][key] <= filters[key][0]){
+                                            res = false
+                                        }
+                                    } else if(!app.res[i][key] || app.res[i][key].indexOf(filters[key]) < 0){
+                                        res = false
+                                    }
+                                }
+                            }
+                            if(res){
+                                newData.push(app.res[i])
+                            }
+                        }
+
+                        app.res = newData
+                        app.tkey++
+                    },
+                    openUrl: (url) => {
+                        new QWebChannel(qt.webChannelTransport, function(channel) {
+                            channel.objects.webobj.openMobileUrl(url);
+                        })
+                    },
+                    cachingImage: (url) => {
+                        new QWebChannel(qt.webChannelTransport, function(channel) {
+                            channel.objects.webobj.cachingImage(url);
+                        })
+                    },
+                    viewImage: (url) => {
+                        new QWebChannel(qt.webChannelTransport, function(channel) {
+                            channel.objects.webobj.openImage(url);
+                        })
+                    }
+                }
+            }).use(TDesign).mount('#app')
+
+            app.initFreight()
+            app.initData()
+        }
+        // createPage('https://work-serve.fixeam.com/api', 'HZ13', 'NT')
+    </script>
+</body>
+
+</html>

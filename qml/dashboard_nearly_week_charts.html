@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>dashboard_nearly_week_charts</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4/dist/echarts.min.js"></script>
+</head>
+
+<body>
+    <div id="mainChart" style="width: 100%; height: calc(100vh - 50px);"></div>
+    <script>
+        let chartsData = {
+            tooltip: {
+                trigger: 'axis'
+            },
+            legend: {
+                data: ['销售金额', '退款金额', '净收金额']
+            },
+            xAxis: {
+                type: 'category',
+                nameLocation: 'middle',
+                boundaryGap: false,
+                data: []
+            },
+            yAxis: {
+                type: 'value'
+            },
+            series: [
+                {
+                    type: 'bar',
+                    barMaxWidth: 30,
+                    itemStyle: {
+                        borderRadius: 5,
+                    },
+                    name: '销售金额',
+                    data: [],
+                    showSymbol: false,
+                    smooth: true
+                },
+                {
+                    type: 'bar',
+                    barMaxWidth: 30,
+                    itemStyle: {
+                        borderRadius: 5,
+                    },
+                    name: '退款金额',
+                    data: [],
+                    showSymbol: false,
+                    smooth: true
+                },
+                {
+                    type: 'line',
+                    name: '净收金额',
+                    data: [],
+                    showSymbol: false,
+                    smooth: true
+                }
+            ]
+        }
+
+        function setData(lin){
+            for (let i = 0; i < lin.length; i++) {
+                chartsData.xAxis.data.push(lin[i].time)
+
+                chartsData.series[0].data.push(lin[i].salesAmount)
+                chartsData.series[1].data.push(lin[i].refundsAmount)
+                chartsData.series[2].data.push(lin[i].income)
+            }
+
+            setTimeout(() => {
+                let charts = echarts.init(document.querySelector('#mainChart'))
+                document.querySelector('#mainChart').removeAttribute('_echarts_instance_')
+                charts.clear()
+                charts.setOption(chartsData, true)
+
+                window.addEventListener("resize", function () {
+                    charts.resize()
+                })
+            }, 100)
+        }
+    </script>
+</body>
+
+</html>

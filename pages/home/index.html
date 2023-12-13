@@ -1,0 +1,739 @@
+﻿<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>homepage.html</title>
+    <script src="qrc:///pages/src/vue.global.js"></script>
+    <link rel="stylesheet" href="qrc:///pages/src/tdesign.min.css" />
+    <script src="qrc:///pages/src/tdesign.min.js"></script>
+    <link rel="stylesheet" href="qrc:///pages/src/windows-app.css" />
+    <link rel="stylesheet" href="qrc:///pages/src/global.css" />
+    <style>
+        /* 页面CSS */
+        .overview-number{
+            font-size: 32px;
+            font-family: 'Dosis Medium', sans-serif;
+        }
+        .first-category{
+            margin-top: 24px;
+            margin-bottom: 20px;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .second-category{
+            margin-top: 16px;
+            margin-bottom: 10px;
+            font-size: 15px;
+            font-weight: 700;
+        }
+        .prev-good{
+            display: flex;
+        }
+        .prev-good-item{
+            margin-right: 1px;
+            width:  20%;
+            height: 380px;
+            transition: all 0.2s;
+        }
+        .prev-good-item:hover{
+            flex-shrink: 0;
+            width: 340px;
+        }
+        .prev-good-item-info{
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background-image: linear-gradient(to top, rgba(0, 0, 0, 1), rgba(0, 0, 0, 0));
+            padding: 10px;
+            padding-top: 34px;
+            color: #fff;
+            box-sizing: border-box;
+        }
+        .prev-good-item-info-name{
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            margin: 3px 0;
+        }
+        .next .t-swiper__arrow-left{
+            left: 10px!important;
+        }
+        .next .t-swiper__arrow-right{
+            right: 20px!important;
+        }
+        .next .t-swiper__arrow-left,
+        .next .t-swiper__arrow-right{
+            color: #00000080;
+            border-radius: 7px;
+        }
+        .next .t-swiper__arrow-left:hover,
+        .next .t-swiper__arrow-right:hover{
+            background-color: #00000010;
+            color: #00000080;
+        }
+        .next-good{
+            width: calc(100% + 10px);
+            margin-top: 12px;
+            padding: 0 60px;
+            display: flex;
+            flex-wrap: wrap;
+            box-sizing: border-box;
+        }
+        .next-good-item{
+            flex-shrink: 0;
+            flex-grow: 1;
+            width: 330px;
+            margin: 0 10px 10px 0;
+            overflow: hidden;
+        }
+        .next-good-item .t-card__body{
+            display: flex;
+            padding: 0;
+        }
+        .next-good-item-image{
+            width: 140px;
+            height: 140px;
+            flex-shrink: 0;
+        }
+        .next-good-item-info{
+            padding: 12px 16px;
+            box-sizing: border-box;
+        }
+        .number-show{
+            font-size: 28px;
+            font-family: 'DIN', serif;
+            color: #f6685d;
+        }
+        .new-good{
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-gap: 15px;
+
+            /* 在不同屏幕尺寸下调整列数 */
+        }
+        @media (max-width: 1880px) {
+            .new-good{
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+        @media (max-width: 1440px) {
+            .new-good{
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+        @media (max-width: 1200px) {
+            .new-good{
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+        @media (max-width: 768px) {
+            .new-good{
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+        @media (max-width: 395px) {
+            .new-good{
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+        .new-good-item .t-card__footer{
+            padding: 12px 16px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <t-loading v-show="moduleLoaded < 4" text="主页内容加载中..." size="small" style="height: 90vh; width: 100%;"></t-loading>
+        <div class="main-content">
+            <t-row v-if="moduleLoaded >= 4" :gutter="12">
+                <t-col :span="12" class="first-category">
+                    欢迎回来！
+                </t-col>
+                <t-col :span="12" v-if="shortWord" style="margin-top: 0;">
+                    <t-card :bordered="false">
+                        {{ shortWord }}
+                    </t-card>
+                </t-col>
+
+                <t-col :span="12" class="first-category">
+                    昨日销售:
+                </t-col>
+                <t-col :span="12" v-if="(res.sales.count == null || res.sales.count == 0) && (res.refunds.count == null || res.refunds.count == 0)">
+                    <t-alert>
+                        <template #message>昨日销售未上传</template>
+                        <template #operation>
+                            <span @click="openPage('import')">立即上传</span>
+                        </template>
+                    </t-alert>
+                </t-col>
+                <t-col :xs="4" :sm="3" :md="2" style="margin-top: 8px;" v-if="res.sales.count != null && res.refunds.count != null && res.sales.count != 0 && res.refunds.count != 0">
+                    <t-card title="销售数量" :bordered="false">
+                        <span class="overview-number">
+                            {{ res.sales.count == null ? 0 : res.sales.count }}
+                        </span>
+                        件
+                    </t-card>
+                </t-col>
+                <t-col :xs="4" :sm="3" :md="2" style="margin-top: 8px;" v-if="res.sales.count != null && res.refunds.count != null && res.sales.count != 0 && res.refunds.count != 0">
+                    <t-card title="销售金额" :bordered="false">
+                        ￥
+                        <span class="overview-number">
+                            {{ res.sales.amount == null ? 0 : res.sales.amount }}
+                        </span>
+                        元
+                    </t-card>
+                </t-col>
+                <t-col :xs="4" :sm="3" :md="2" style="margin-top: 8px;" v-if="res.sales.count != null && res.refunds.count != null && res.sales.count != 0 && res.refunds.count != 0">
+                    <t-card title="退款数量" :bordered="false">
+                        <span class="overview-number">
+                            {{ res.refunds.count == null ? 0 : res.refunds.count }}
+                        </span>
+                        件
+                    </t-card>
+                </t-col>
+                <t-col :xs="4" :sm="3" :md="2" style="margin-top: 8px;" v-if="res.sales.count != null && res.refunds.count != null && res.sales.count != 0 && res.refunds.count != 0">
+                    <t-card title="退款金额" :bordered="false">
+                        ￥
+                        <span class="overview-number">
+                            {{ res.refunds.amount == null ? 0 : res.refunds.amount }}
+                        </span>
+                        元
+                    </t-card>
+                </t-col>
+                <t-col :xs="4" :sm="3" :md="2" style="margin-top: 8px;" v-if="res.sales.count != null && res.refunds.count != null && res.sales.count != 0 && res.refunds.count != 0">
+                    <t-card title="实销金额" :bordered="false">
+                        ￥
+                        <span class="overview-number">
+                            {{ res.sales.amount - res.refunds.amount }}
+                        </span>
+                        元
+                    </t-card>
+                </t-col>
+                <t-col :xs="4" :sm="3" :md="2" style="margin-top: 8px;" v-if="res.sales.count != null && res.refunds.count != null && res.sales.count != 0 && res.refunds.count != 0">
+                    <t-card title="净收金额" :bordered="false">
+                        ￥
+                        <span class="overview-number">
+                            {{ res.sales.income - res.refunds.income }}
+                        </span>
+                        元
+                    </t-card>
+                </t-col>
+                
+                <t-col :span="12" class="first-category">
+                    款式推荐:
+                    <t-tooltip content="销售数量取值范围为最近30个自然日, 计算的数据包含已取消的订单, 总共计算200个商品。">
+                        <t-icon name="help-circle" :style="{
+                            color: '#aaa',
+                            cursor: 'pointer'
+                        }"></t-icon>
+                    </t-tooltip>
+                </t-col>
+                <t-col :span="12">
+                    <div class="second-category" style="margin-top: 0;">TOP8</div>
+                    <div class="prev-good" v-if="mirro.prev">
+                        <div
+                        class="prev-good-item"
+                        v-for="item in mirro.prev"
+                        >
+                                <t-image
+                                fit="cover"
+                                :src="JSON.parse(item['main-image']) == null ? '' : JSON.parse(item['main-image'])[0]"
+                                @click="viewImage(JSON.parse(item['main-image']) == null ? '' : JSON.parse(item['main-image'])[0])"
+                                @load="cachingImage(JSON.parse(item['main-image']) == null ? '' : JSON.parse(item['main-image'])[0])"
+                                @contextmenu.prevent.stop="createContextMenu($event, item)"
+                                overlay-trigger="hover"
+                                style="width: 100%; height: 100%;"
+                                >
+                                    <template #overlay-content>
+                                        <div class="prev-good-item-info">
+                                            <t-tag
+                                            size="small"
+                                            theme="primary"
+                                            variant="light"
+                                            >
+                                                <span v-if="item['store-id'] == '132'">
+                                                    海宁银泰城
+                                                </span>
+                                                <span v-if="item['store-id'] == 'HZ13'">
+                                                    杭州文化广场
+                                                </span>
+                                                <span v-if="item['store-id'] == 'HZ20'">
+                                                    杭州滨江银泰广场
+                                                </span>
+                                                /
+                                                {{ item.brand }}
+                                            </t-tag>
+                                            <div class="prev-good-item-info-name">
+                                                {{ item.name }}
+                                            </div>
+                                            <div
+                                            :style="{
+                                                margin: '3px 0'
+                                            }"
+                                            >
+                                                近期销售
+                                                <span class="number-show">
+                                                    {{ item.salesCount }}
+                                                </span>
+                                                件
+                                            </div>
+                                            <t-button
+                                            v-if="item['miaostreet-id'] != null"
+                                            size="small"
+                                            @click.stop="openUrl('https://www.miaostreet.com/clmj/hybrid/miaojieWeex?pageName=goods-detail&itemId=' + item['miaostreet-id'])"
+                                            >
+                                                <template #icon>
+                                                    <t-icon name="browse"></t-icon>
+                                                </template>
+                                                查看商品
+                                            </t-button>
+                                        </div>
+                                    </template>
+                                </t-image>
+                        </div>
+                    </div>
+                    <div
+                    class="next"
+                    v-for="brandGoods, brand in mirro.list"
+                    :key="brand"
+                    >
+                        <div class="second-category">{{ brand }}</div>
+                        <t-swiper
+                        :autoplay="false"
+                        :navigation="{
+                            placement: 'outside',
+                            showSlideBtn: 'always',
+                            size: 'large',
+                            type: 'bars'
+                        }"
+                        trigger="click"
+                        >
+                            <t-swiper-item
+                            v-for="brandGoodsGroup, GroupIndex in brandGoods"
+                            :key="GroupIndex"
+                            >
+                                <div class="next-good">
+                                    <t-card
+                                    :bordered="false"
+                                    class="next-good-item"
+                                    v-for="item, index in brandGoodsGroup"
+                                    :key="index"
+                                    @contextmenu.prevent.stop="createContextMenu($event, item)"
+                                    hover-shadow
+                                    >
+                                        <t-image
+                                        class="next-good-item-image"
+                                        :src="JSON.parse(item['main-image']) == null ? '' : JSON.parse(item['main-image'])[0]"
+                                        @click="viewImage(JSON.parse(item['main-image']) == null ? '' : JSON.parse(item['main-image'])[0])"
+                                        @load="cachingImage(JSON.parse(item['main-image']) == null ? '' : JSON.parse(item['main-image'])[0])"
+                                        >
+                                        </t-image>
+                                        <div class="next-good-item-info">
+                                            <t-tag
+                                            size="small"
+                                            theme="primary"
+                                            variant="light"
+                                            >
+                                                <span v-if="item['store-id'] == '132'">
+                                                    海宁银泰城
+                                                </span>
+                                                <span v-if="item['store-id'] == 'HZ13'">
+                                                    杭州文化广场
+                                                </span>
+                                                <span v-if="item['store-id'] == 'HZ20'">
+                                                    杭州滨江银泰广场
+                                                </span>
+                                            </t-tag>
+                                            <div class="prev-good-item-info-name" style="margin: 8px 0; -webkit-line-clamp: 1;">
+                                                {{ item.name }}
+                                            </div>
+                                            <div
+                                            :style="{
+                                                margin: '10px 0'
+                                            }"
+                                            >
+                                                近期销售
+                                                <span class="number-show">
+                                                    {{ item.salesCount }}
+                                                </span>
+                                                件
+                                            </div>
+                                            <t-button
+                                            v-if="item['miaostreet-id'] != null"
+                                            size="small"
+                                            @click.stop="openUrl('https://www.miaostreet.com/clmj/hybrid/miaojieWeex?pageName=goods-detail&itemId=' + item['miaostreet-id'])"
+                                            >
+                                                <template #icon>
+                                                    <t-icon name="browse"></t-icon>
+                                                </template>
+                                                查看商品
+                                            </t-button>
+                                        </div>
+                                    </t-card>
+                                    <t-card
+                                    :bordered="false"
+                                    class="next-good-item"
+                                    v-if="brandGoodsGroup.length < 2"
+                                    style="text-align: center; height: 140px;"
+                                    >
+                                        <div style="font-size: 14px; position: absolute; top: 48%; left: 50%; transform: translate(-50%, -50%);">
+                                            <t-icon name="widget"></t-icon>
+                                            暂无更多商品
+                                        </div>
+                                    </t-card>
+                                    <t-card
+                                    :bordered="false"
+                                    class="next-good-item"
+                                    v-if="brandGoodsGroup.length < 3"
+                                    style="text-align: center; height: 140px;"
+                                    >
+                                        <div style="font-size: 14px; position: absolute; top: 48%; left: 50%; transform: translate(-50%, -50%);">
+                                            <t-icon name="widget"></t-icon>
+                                            暂无更多商品
+                                        </div>
+                                    </t-card>
+                                    <t-card
+                                    :bordered="false"
+                                    class="next-good-item"
+                                    v-if="brandGoodsGroup.length < 4"
+                                    style="text-align: center; height: 140px;"
+                                    >
+                                        <div style="font-size: 14px; position: absolute; top: 48%; left: 50%; transform: translate(-50%, -50%);">
+                                            <t-icon name="widget"></t-icon>
+                                            暂无更多商品
+                                        </div>
+                                    </t-card>
+                                    <t-card
+                                    :bordered="false"
+                                    class="next-good-item"
+                                    v-if="brandGoodsGroup.length < 5"
+                                    style="text-align: center; height: 140px;"
+                                    >
+                                        <div style="font-size: 14px; position: absolute; top: 48%; left: 50%; transform: translate(-50%, -50%);">
+                                            <t-icon name="widget"></t-icon>
+                                            暂无更多商品
+                                        </div>
+                                    </t-card>
+                                    <t-card
+                                    :bordered="false"
+                                    class="next-good-item"
+                                    v-if="brandGoodsGroup.length < 6"
+                                    style="height: 140px;"
+                                    >
+                                        <div style="font-size: 14px; position: absolute; top: 48%; left: 50%; transform: translate(-50%, -50%);">
+                                            <t-icon name="widget"></t-icon>
+                                            暂无更多商品
+                                        </div>
+                                    </t-card>
+                                </div>
+                            </t-swiper-item>
+                        </t-swiper>
+                    </div>
+                </t-col>
+
+                <t-col :span="12" class="first-category">
+                    店铺新品:
+                </t-col>
+                <t-col :span="12" v-if="news && news.length > 0" class="new-good">
+                    <t-card
+                    :bordered="false"
+                    class="new-good-item"
+                    v-for="item, index in news"
+                    :key="index"
+                    @contextmenu.prevent.stop="createContextMenu($event, item)"
+                    hover-shadow
+                    >
+                        <template #cover>
+                            <t-image
+                            style="min-height: 200px;"
+                            :src="JSON.parse(item['main-image']) == null ? '' : JSON.parse(item['main-image'])[0]"
+                            @click="viewImage(JSON.parse(item['main-image']) == null ? '' : JSON.parse(item['main-image'])[0])"
+                            @load="cachingImage(JSON.parse(item['main-image']) == null ? '' : JSON.parse(item['main-image'])[0])"
+                            >
+                            </t-image>
+                        </template>
+                        <template #footer>
+                            <div class="prev-good-item-info-name" style="margin: 8px 0;">
+                                {{ item.name }}
+                            </div>
+                            <div>
+                                {{ item['entry-time'] }}
+                            </div>
+                            <t-button
+                            v-if="item['miaostreet-id'] != null"
+                            size="small"
+                            @click.stop="openUrl('https://www.miaostreet.com/clmj/hybrid/miaojieWeex?pageName=goods-detail&itemId=' + item['miaostreet-id'])"
+                            >
+                                <template #icon>
+                                    <t-icon name="browse"></t-icon>
+                                </template>
+                                查看商品
+                            </t-button>
+                        </template>
+                    </t-card>
+                </t-col>
+                <t-col :span="5" style="margin-top: 12px;">
+                </t-col>
+                <t-col :span="2" style="margin-top: 12px;">
+                    <t-loading
+                    v-if="total == 0"
+                    text="加载中..."
+                    style="width: 100%;"
+                    size="small"
+                    >
+                    </t-loading>
+                    <t-button
+                    v-if="news && news.length < total"
+                    @click="initNew()"
+                    size="small"
+                    block
+                    >
+                        加载更多
+                    </t-button>
+                </t-col>
+                <t-col :span="5" style="margin-top: 12px;">
+                </t-col>
+            </t-row>
+        </div>
+        <div class="t-popup" id="context-menu" v-if="contextMenu.item" v-show="contextMenu.show" :style="{
+            top: contextMenu.top,
+            left: contextMenu.left
+        }">
+            <div class="t-popup__content" style="padding: 0; overflow: hidden; min-width: 200px;">
+                <t-divider v-if="contextMenu.item['miaostreet-id'] == null && JSON.parse(contextMenu.item['main-image']) == null" align="left" style="margin: var(--td-comp-margin-m) 0;">提示</t-divider>
+                <div v-if="contextMenu.item['miaostreet-id'] == null && JSON.parse(contextMenu.item['main-image']) == null" style="padding: 30px 0; text-align: center;">
+                    Oops! 暂无可用的菜单选项!
+                </div>
+
+                <t-divider v-if="JSON.parse(contextMenu.item['main-image']) != null" align="left" style="margin: var(--td-comp-margin-m) 0;">查看图片</t-divider>
+                <t-button v-if="JSON.parse(contextMenu.item['main-image']) != null" block variant="text" @click="viewImage(JSON.parse(contextMenu.item['main-image']) == null ? '' : JSON.parse(contextMenu.item['main-image'])[0])"><template #icon><t-icon name="image-1"></t-icon></template>默认图片查看器</t-button>
+                <t-button v-if="JSON.parse(contextMenu.item['main-image']) != null" block variant="text" @click="openUrl(JSON.parse(contextMenu.item['main-image']) == null ? '' : JSON.parse(contextMenu.item['main-image'])[0])"><template #icon><t-icon name="system-interface"></t-icon></template>内部浏览器</t-button>
+                
+                <t-divider v-if="JSON.parse(contextMenu.item['main-image']) != null" align="left" style="margin: var(--td-comp-margin-m) 0;">操作图片</t-divider>
+                <t-button v-if="JSON.parse(contextMenu.item['main-image']) != null" block variant="text" @click="copyImage(JSON.parse(contextMenu.item['main-image']) == null ? '' : JSON.parse(contextMenu.item['main-image'])[0])"><template #icon><t-icon name="image"></t-icon></template>复制图片</t-button>
+                <t-button v-if="JSON.parse(contextMenu.item['main-image']) != null" block variant="text" @click="copyUrl(JSON.parse(contextMenu.item['main-image']) == null ? '' : JSON.parse(contextMenu.item['main-image'])[0])"><template #icon><t-icon name="link"></t-icon></template>复制图片链接</t-button>
+                <t-button v-if="JSON.parse(contextMenu.item['main-image']) != null" block variant="text" @click="saveImage(JSON.parse(contextMenu.item['main-image']) == null ? '' : JSON.parse(contextMenu.item['main-image'])[0])"><template #icon><t-icon name="save"></t-icon></template>保存图片</t-button>
+
+                <t-divider v-if="contextMenu.item['miaostreet-id'] != null" align="left" style="margin: var(--td-comp-margin-m) 0;">查看商品</t-divider>
+                <t-button v-if="contextMenu.item['miaostreet-id'] != null" block variant="text" @click="openUrl('https://www.miaostreet.com/clmj/hybrid/miaojieWeex?pageName=goods-detail&itemId=' + contextMenu.item['miaostreet-id'])"><template #icon><t-icon name="system-interface"></t-icon></template>内部浏览器</t-button>
+                <t-button v-if="contextMenu.item['miaostreet-id'] != null" block variant="text" @click="copyUrl('https://www.miaostreet.com/clmj/hybrid/miaojieWeex?pageName=goods-detail&itemId=' + contextMenu.item['miaostreet-id'])"><template #icon><t-icon name="copy"></t-icon></template>复制商品链接</t-button>
+                <t-button v-if="contextMenu.item['miaostreet-id'] != null" block variant="text" @click="copyUrl(contextMenu.item['miaostreet-id'])"><template #icon><t-icon name="flag-3"></t-icon></template>复制商品ID</t-button>
+            </div>
+        </div>
+    </div>
+    <script src="qrc:///pages/js/qwebchannel.js"></script>
+    <script type="text/javascript">
+        let app
+
+        function createPage(serve_host, store, brand){
+            document.querySelector('#app').style.display = 'block'
+
+            app = Vue.createApp({
+                data() {
+                    return {
+                        res: false,
+                        dateIs: false,
+                        moduleLoaded: 0,
+                        shortWord: false,
+                        mirro: {
+                            prev: [],
+                            list: {}
+                        },
+                        news: [],
+                        total: 0,
+                        contextMenu: {
+                            show: false,
+                            item: false,
+                            top: 0,
+                            left: 0
+                        }
+                    }
+                },
+                watch: {
+                    moduleLoaded: function(newV){
+                        if(newV >= 4){
+                            new QWebChannel(qt.webChannelTransport, function(channel) {
+                                channel.objects.webobj.show();
+                            })
+                        }
+                    }
+                },
+                methods: {
+                    getData: async () => {
+                        let date = new Date()
+                        date.setDate(date.getDate() - 1)
+                        app.dateIs = date.toISOString().split("T")[0]
+
+                        return fetch(serve_host + "/analysis/sum?store-id=" + store + "&brand=" + brand + "&mode=日&time=" + app.dateIs)
+                        .then((response) => {
+                            return Promise.resolve(response.json())
+                        })
+                    },
+                    initData: async () => {
+                        app.res = await app.getData()
+                        app.moduleLoaded++
+                    },
+                    getShortWord: async () => {
+                        return fetch(serve_host + "/famous-word")
+                        .then((response) => {
+                            return Promise.resolve(response.json())
+                        })
+                    },
+                    initShortWord: async () => {
+                        let response = await app.getShortWord()
+
+                        app.shortWord = response.hitokoto + ' 来自《' + response.works + '》'
+                        if(response.author && response.author != undefined && response.author != null){
+                            app.shortWord += response.author
+                        }
+                        app.shortWord += '。'
+                        app.moduleLoaded++
+                    },
+                    getMirro: async () => {
+                        return fetch(serve_host + "/goods/mirros")
+                        .then((response) => {
+                            return Promise.resolve(response.json())
+                        })
+                    },
+                    initMirro: async () => {
+                        let response = await app.getMirro()
+
+                        app.mirro.prev = new Array
+                        app.mirro.list = new Object
+                        for (let i = 0; i < response.length; i++) {
+                            if(i < 8){
+                                app.mirro.prev.push(response[i])
+                            } else {
+                                if(app.mirro.list[response[i].brand]){
+                                    if(app.mirro.list[response[i].brand][app.mirro.list[response[i].brand].length - 1].length < 6){
+                                        app.mirro.list[response[i].brand][app.mirro.list[response[i].brand].length - 1].push(response[i])
+                                    } else {
+                                        app.mirro.list[response[i].brand].push([response[i]])
+                                    }
+                                } else {
+                                    app.mirro.list[response[i].brand] = [
+                                        [response[i]]
+                                    ]
+                                }
+                            }
+                        }
+                        app.contextMenu.item = app.mirro.prev[0]
+                        app.moduleLoaded++
+                    },
+                    getNew: async (data = {}) => {
+                        return fetch(serve_host + "/goods/mul/get?start=" + app.news.length + "&number=30", {
+                            method: "POST",
+                            mode: "cors",
+                            cache: "no-cache",
+                            credentials: "same-origin",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            redirect: "follow",
+                            referrerPolicy: "no-referrer",
+                            body: JSON.stringify(data)
+                        })
+                        .then((response) => {
+                            return Promise.resolve(response.json())
+                        })
+                    },
+                    initNew: async () => {
+                        app.total = 0
+
+                        let response = await app.getNew({
+                            'store-id': store,
+                            brand
+                        })
+
+                        app.total = response.total
+                        app.news = app.news.concat(response.data)
+                        app.moduleLoaded++
+                    },
+                    openPage: (page) => {
+                        new QWebChannel(qt.webChannelTransport, function(channel) {
+                            channel.objects.webobj.openPage(page);
+                        })
+                    },
+                    viewImage: (url) => {
+                        new QWebChannel(qt.webChannelTransport, function(channel) {
+                            channel.objects.webobj.openImage(url);
+                        })
+                    },
+                    cachingImage: (url) => {
+                        new QWebChannel(qt.webChannelTransport, function(channel) {
+                            channel.objects.webobj.cachingImage(url);
+                        })
+                    },
+                    openUrl: (url) => {
+                        new QWebChannel(qt.webChannelTransport, function(channel) {
+                            channel.objects.webobj.openMobileUrl(url);
+                        })
+                    },
+                    openUrlInDefaultBrowser: (url) => {
+                        new QWebChannel(qt.webChannelTransport, function(channel) {
+                            channel.objects.webobj.openUrl(url);
+                        })
+                    },
+                    copyImage: (url) => {
+                        new QWebChannel(qt.webChannelTransport, function(channel) {
+                            channel.objects.webobj.copyImage(url);
+                        })
+                        app.$message.success({
+                            content: '复制成功',
+                            placement: 'top-right'
+                        })
+                    },
+                    saveImage: (url) => {
+                        new QWebChannel(qt.webChannelTransport, function(channel) {
+                            channel.objects.webobj.saveImage(url);
+                        })
+                    },
+                    copyUrl: (url) => {
+                        new QWebChannel(qt.webChannelTransport, function(channel) {
+                            channel.objects.webobj.copyUrl(url);
+                        })
+                        app.$message.success({
+                            content: '复制成功',
+                            placement: 'top-right'
+                        })
+                    },
+                    createContextMenu: (e, item) => {
+                        let menu = document.querySelector('#context-menu')
+                        app.contextMenu.item = item
+
+                        if(e.clientY + 347 + 80 > window.innerHeight){
+                            app.contextMenu.top = (e.clientY - 347 + 80) + 'px'
+                        } else {
+                            app.contextMenu.top = (e.clientY - 80) + 'px'
+                        }
+                        if(e.clientX + menu.offsetWidth - 5 > window.innerWidth){
+                            app.contextMenu.left = (e.clientX - menu.offsetWidth - 5) + 'px'
+                        } else {
+                            app.contextMenu.left = (e.clientX + 5) + 'px'
+                        }
+
+                        app.contextMenu.show = true
+                    }
+                }
+            }).use(TDesign).mount('#app')
+
+            app.initData()
+            app.initShortWord()
+            app.initMirro()
+            app.initNew()
+
+            window.addEventListener('click', function(){
+                app.contextMenu.show = false
+            })
+            window.addEventListener('scroll', function(){
+                app.contextMenu.show = false
+            })
+        }
+    </script>
+</body>
+
+</html>

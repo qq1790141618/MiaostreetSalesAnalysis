@@ -1,0 +1,51 @@
+﻿@font-face {
+    font-family: 'Pingfang SC Medium';
+    src: url('https://cdn.fixeam.com/font/Pingfang%20SC%20Medium.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'Dosis Medium';
+    src: url('https://cdn.fixeam.com/font/Dosis/Dosis-Medium.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'DIN';
+    src: url('https://cdn.fixeam.com/font/DIN.ttf') format('truetype')
+}
+#app{
+    display: none;
+    font-family: 'Pingfang SC Medium', Arial, sans-serif!important;
+}
+.main-content{
+    padding: 9px 15px;
+}
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+::-webkit-scrollbar-track {
+    width: 6px;
+    background: rgba(#101F1C, 0.1);
+    -webkit-border-radius: 2em;
+    -moz-border-radius: 2em;
+    border-radius: 2em;
+}
+::-webkit-scrollbar-thumb {
+    background-color: rgba(144,147,153,.5);
+    background-clip: padding-box;
+    min-height: 28px;
+    -webkit-border-radius: 2em;
+    -moz-border-radius: 2em;
+    border-radius: 2em;
+    transition: background-color .3s;
+    cursor: pointer;
+}
+::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(144,147,153,.3);
+}
+#context-menu{
+    position: fixed;
+    transition: display 0.7s;
+}
+#context-menu .t-button:hover{
+    border-radius: 0;
+    background-color: #f2f3ff;
+}

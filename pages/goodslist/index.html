@@ -1,0 +1,808 @@
+﻿<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>goodslist.html</title>
+    <script src="qrc:///pages/src/vue.global.js"></script>
+    <link rel="stylesheet" href="qrc:///pages/src/tdesign.min.css" />
+    <script src="qrc:///pages/src/tdesign.min.js"></script>
+    <link rel="stylesheet" href="qrc:///pages/src/windows-app.css" />
+    <link rel="stylesheet" href="qrc:///pages/src/global.css" />
+    <style>
+        /* 页面CSS */
+        /* body{
+            background-color: #f2f3ff;
+        } */
+        .search-input-bar .t-col{
+            margin-top: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div class="main-content">
+            <div style="margin: 8px 0;">
+                <t-icon name="search"></t-icon>
+                搜索内容:
+            </div>
+            <t-row class="search-input-bar" :gutter="8" v-show="showMenu">
+                <t-col
+                v-for="item in batchInput"
+                :md="3" :sm="4" :xs="6"
+                >
+                    <t-input
+                    :size="size"
+                    v-model="inputSbody[item.key]"
+                    placeholder="回车可多行输入"
+                    :label="item.label + ':'"
+                    @enter="() => {
+                        if(inputSbody[item.key] == ''){
+                            Smodal[item.key] = true
+                        } else {
+                            search()
+                        }
+                    }"
+                    @change="() => {
+                        Sbody[item.key] = inputSbody[item.key].split(',')
+                    }"
+                    >
+                    </t-input>
+                    <t-dialog
+                    v-model:visible="Smodal[item.key]"
+                    header="批量输入"
+                    @confirm="() => {
+                        inputSbody[item.key] = inputSbody[item.key].replace(/\n/g, ',')
+                        Sbody[item.key] = inputSbody[item.key].split(',')
+                        Smodal[item.key] = false
+                    }"
+                    clearable
+                    >
+                        {{ item.label }}：
+                        <t-textarea
+                        :autosize="{
+                            minRows: 5,
+                            maxRows: 5
+                        }"
+                        v-model="inputSbody[item.key]"
+                        :placeholder="'每个' + item.label + '之间用回车或者英文逗号`,`隔开'"
+                        >
+                        </t-textarea>
+                    </t-dialog>
+                </t-col>
+                <t-col :md="3" :sm="4" :xs="6">
+                    <t-cascader
+                    :size="size"
+                    :options="categoryOptions"
+                    v-model="inputSbody['category-id']"
+                    placeholder="选择分类"
+                    label="分类："
+                    @change="(value) => {
+                        Sbody['category-id'] = inputSbody['category-id']
+                    }"
+                    clearable
+                    filterable
+                    >
+                    </t-cascader>
+                </t-col>
+                <t-col :md="3" :sm="4" :xs="6">
+                    <t-select
+                    :size="size"
+                    :options="supplierOptions"
+                    v-model="inputSbody.supplier"
+                    label="供应商："
+                    @change="(value) => {
+                        Sbody.supplier = inputSbody.supplier
+                    }"
+                    clearable
+                    filterable
+                    >
+                    </t-select>
+                </t-col>
+                <t-col :md="3" :sm="4" :xs="6">
+                    <t-select
+                    :size="size"
+                    v-model="inputSbody.season"
+                    label="季节："
+                    @change="(value) => {
+                        Sbody.season = value
+                    }"
+                    clearable
+                    filterable
+                    >
+                        <t-option value="未设置季节">未设置季节</t-option>
+                        <t-option value="春季">春季</t-option>
+                        <t-option value="夏季">夏季</t-option>
+                        <t-option value="秋季">秋季</t-option>
+                        <t-option value="冬季">冬季</t-option>
+                        <t-option value="春夏">春夏</t-option>
+                        <t-option value="春夏秋">春夏秋</t-option>
+                        <t-option value="春秋">春秋</t-option>
+                        <t-option value="秋冬">秋冬</t-option>
+                        <t-option value="春夏秋冬">春夏秋冬</t-option>
+                        <t-option value="四季">四季</t-option>
+                    </t-select>
+                </t-col>
+                <t-col :md="3" :sm="4" :xs="6" v-if="!hideExtra">
+                    <t-select
+                    :size="size"
+                    v-model="inputSbody.sex"
+                    label="性别："
+                    @change="(value) => {
+                        Sbody.sex = value
+                    }"
+                    clearable
+                    filterable
+                    >
+                        <t-option value="未设置性别">未设置性别</t-option>
+                        <t-option value="男性">男性</t-option>
+                        <t-option value="女性">女性</t-option>
+                        <t-option value="中性">男女/中性</t-option>
+                        <t-option value="男女同款">男女同款</t-option>
+                        <t-option value="儿童">儿童</t-option>
+                    </t-select>
+                </t-col>
+                <t-col :md="3" :sm="4" :xs="6">
+                    <t-select
+                    :size="size"
+                    v-model="inputSbody['miaostreet-listing-status']"
+                    label="喵街上架状态："
+                    @change="(value) => {
+                        Sbody['miaostreet-listing-status'] = value
+                    }"
+                    clearable
+                    filterable
+                    >
+                        <t-option :value="1" label="上架"></t-option>
+                        <t-option :value="0" label="下架"></t-option>
+                    </t-select>
+                </t-col>
+                <t-col :md="3" :sm="4" :xs="6">
+                    <t-select
+                    :size="size"
+                    v-model="inputSbody['tmall-listing-status']"
+                    label="天猫上架状态："
+                    @change="(value) => {
+                        Sbody['tmall-listing-status'] = value
+                    }"
+                    clearable
+                    filterable
+                    >
+                        <t-option :value="1" label="上架"></t-option>
+                        <t-option :value="0" label="下架"></t-option>
+                    </t-select>
+                </t-col>
+                <t-col :md="6" :sm="8" :xs="12">
+                    <t-select
+                    :size="size"
+                    v-model="doNotUpload"
+                    label="内容未上传："
+                    @change="doNotUploadChange"
+                    :min-collapsed-num="2"
+                    clearable
+                    multiple
+                    >
+                        <t-option value="color-image" label="颜色图未上传"></t-option>
+                        <t-option value="main-image" label="主图未上传"></t-option>
+                        <t-option value="cost" label="运营/成本价未上传"></t-option>
+                        <t-option value="price" label="日常销售价未上传"></t-option>
+                        <t-option value="first-listing-time" label="首次上架时间未上传"></t-option>
+                    </t-select>
+                </t-col>
+            </t-row>
+            <div style="margin-top: 8px;">
+                <t-button
+                :size="size"
+                @click="search()"
+                theme="success"
+                style="margin-right: 8px;"
+                >
+                    <template #icon>
+                        <t-icon name="search"></t-icon>
+                    </template>
+                    搜索
+                </t-button>
+                <t-button
+                v-if="showMenu"
+                :size="size"
+                @click="reset"
+                theme="primary"
+                style="margin-right: 8px;"
+                >
+                    <template #icon>
+                        <t-icon name="refresh"></t-icon>
+                    </template>
+                    重置
+                </t-button>
+                <t-button
+                :size="size"
+                @click="() => {
+                    showMenu = !showMenu
+                    computerTableHeight()
+                    tkey++
+                }"
+                variant="outline"
+                >
+                    <template #icon>
+                        <t-icon :name="showMenu ? 'chevron-up-double' : 'chevron-down-double'"></t-icon>
+                    </template>
+                    {{ showMenu ? '收起菜单' : '展开菜单' }}
+                </t-button>
+            </div>
+            <t-alert
+            type="normal"
+            :style="{
+                margin: '8px 0',
+                padding: '5px 10px'
+            }"
+            >
+                <template #icon></template>
+                <t-button
+                variant="text"
+                theme="danger"
+                :loading="deleteLoading"
+                :disabled="!selectedKeys || selectedKeys.length == 0"
+                @click="() => {
+                    if(!selectedKeys || selectedKeys.length == 0){
+                        $message.info('未选择任何商品')
+                    } else {
+                        let confirm = $dialog.confirm({
+                            header: '删除确认',
+                            body: '确认删除这些商品吗? 删除后无法恢复。由于涉及商品较多, 请谨慎确认!',
+                            showInAttachedElement: true,
+                            attach: '#goods-page',
+                            onConfirm: () => {
+                                removeItem(selectedKeys)
+                                confirm.destroy()
+                            }
+                        })
+                    }
+                }"
+                >
+                    <template #icon>
+                        <t-icon name="delete" />
+                    </template>
+                    删除商品 (勾选)
+                </t-button>
+            </t-alert>
+            <t-table
+            size="small"
+            :loading="loading"
+            :columns="columns"
+            :data="res"
+            :key="tkey"
+            row-key="stylenumber"
+            :height="showMenu ? 'calc(100vh - 360px)' : 'calc(100vh - 205px)'"
+            v-model:selected-row-keys="selectedKeys"
+            table-content-width="100%"
+            header-affixed-top
+            hover
+            >
+                <template #main-image-show="{ row }">
+                    <t-image
+                    v-if="row['main-image'] != null"
+                    :src="row['main-image'] == null ? '' : JSON.parse(row['main-image'])[0]"
+                    @click="viewImage(row['main-image'] == null ? '' : JSON.parse(row['main-image'])[0])"
+                    @load="cachingImage(row['main-image'] == null ? '' : JSON.parse(row['main-image'])[0])"
+                    @contextmenu.prevent.stop="createContextMenu($event, row)"
+                    >
+                    </t-image>
+                    <span v-if="row['main-image'] == null">
+                        暂未设置主图
+                    </span>
+                </template>
+                <template #color-show="{ row }">
+                    <t-tag
+                    size="small"
+                    v-for="item in row.color.split(',')"
+                    maxWidth="100px"
+                    style="margin: 2px;"
+                    >
+                        {{ item }}
+                    </t-tag>
+                </template>
+                <template #size-show="{ row }">
+                    <t-tag
+                    size="small"
+                    v-for="item in row.size.split(',')"
+                    maxWidth="100px"
+                    style="margin: 2px;"
+                    >
+                        {{ item }}
+                    </t-tag>
+                </template>
+                <template #operate="{ row }">
+                    <t-button
+                    :size="size"
+                    @click="editItem(row.stylenumber)"
+                    theme="primary"
+                    style="margin: 2px;"
+                    >
+                        <template #icon>
+                            <t-icon name="edit"></t-icon>
+                        </template>
+                        编辑商品
+                    </t-button>
+                    <t-button
+                    v-if="row['miaostreet-id'] && row['miaostreet-id'] != null"
+                    :size="size"
+                    @click="openUrl('https://www.miaostreet.com/clmj/hybrid/miaojieWeex?pageName=goods-detail&itemId=' + row['miaostreet-id'])"
+                    variant="outline"
+                    style="margin: 2px;"
+                    >
+                        <template #icon>
+                            <t-icon name="browse"></t-icon>
+                        </template>
+                        查看商品页面
+                    </t-button>
+                    <t-popconfirm
+                    theme="warning"
+                    content="确认删除此商品吗? 删除后无法恢复。"
+                    @confirm="removeItem([row.stylenumber])"
+                    >
+                        <t-button
+                        :size="size"
+                        type="primary"
+                        theme="danger"
+                        style="margin: 2px;"
+                        >
+                            <template #icon>
+                                <t-icon name="delete"></t-icon>
+                            </template>
+                            删除商品
+                        </t-button>
+                    </t-popconfirm>
+                </template>
+            </t-table>
+            <t-pagination
+            :disabled="loading"
+            v-model="pagination.current"
+            v-model:page-size="pagination.pageSize"
+            :page-size-options="pagination.pageSizeOption"
+            :total="total"
+            @current-change="search"
+            @page-size-change="(value) => {
+                pageSizeSet(value)
+                search()
+            }"
+            show-jumper
+            :style="{
+                marginTop: '8px'
+            }"
+            ></t-pagination>
+        </div>
+        <div class="t-popup" id="context-menu" v-if="contextMenu.item" v-show="contextMenu.show" :style="{
+            top: contextMenu.top,
+            left: contextMenu.left
+        }">
+            <div class="t-popup__content" style="padding: 0; overflow: hidden; min-width: 200px;">
+                <t-divider v-if="contextMenu.item['miaostreet-id'] == null && JSON.parse(contextMenu.item['main-image']) == null" align="left" style="margin: var(--td-comp-margin-m) 0;">提示</t-divider>
+                <div v-if="contextMenu.item['miaostreet-id'] == null && JSON.parse(contextMenu.item['main-image']) == null" style="padding: 30px 0; text-align: center;">
+                    Oops! 暂无可用的菜单选项!
+                </div>
+
+                <t-button v-if="JSON.parse(contextMenu.item['main-image']) != null" block variant="text" @click="viewImage(JSON.parse(contextMenu.item['main-image']) == null ? '' : JSON.parse(contextMenu.item['main-image'])[0])"><template #icon><t-icon name="image-1"></t-icon></template>默认图片查看器打开</t-button>
+                <t-button v-if="JSON.parse(contextMenu.item['main-image']) != null" block variant="text" @click="openUrl(JSON.parse(contextMenu.item['main-image']) == null ? '' : JSON.parse(contextMenu.item['main-image'])[0])"><template #icon><t-icon name="system-interface"></t-icon></template>内部浏览器打开</t-button>
+                <t-button v-if="JSON.parse(contextMenu.item['main-image']) != null" block variant="text" @click="copyImage(JSON.parse(contextMenu.item['main-image']) == null ? '' : JSON.parse(contextMenu.item['main-image'])[0])"><template #icon><t-icon name="image"></t-icon></template>复制图片</t-button>
+                <t-button v-if="JSON.parse(contextMenu.item['main-image']) != null" block variant="text" @click="copyUrl(JSON.parse(contextMenu.item['main-image']) == null ? '' : JSON.parse(contextMenu.item['main-image'])[0])"><template #icon><t-icon name="link"></t-icon></template>复制图片链接</t-button>
+                <t-button v-if="JSON.parse(contextMenu.item['main-image']) != null" block variant="text" @click="saveImage(JSON.parse(contextMenu.item['main-image']) == null ? '' : JSON.parse(contextMenu.item['main-image'])[0])"><template #icon><t-icon name="save"></t-icon></template>保存图片</t-button>
+            </div>
+        </div>
+    </div>
+    <script src="qrc:///pages/js/qwebchannel.js"></script>
+    <script type="text/javascript">
+        let app
+
+        function createPage(serve_host, store, brand, localPageSize){
+            document.querySelector('#app').style.display = 'block'
+
+            app = Vue.createApp({
+                data() {
+                    return {
+                        contextMenu: {
+                            show: false,
+                            item: false,
+                            top: 0,
+                            left: 0
+                        },
+                        res: [],
+                        total: 0,
+                        loading: false,
+                        Sbody: {},
+                        size: false,
+                        showMenu: true,
+                        batchInput: [
+                            {
+                                label: '款号',
+                                key: 'stylenumber'
+                            },
+                            {
+                                label: '商品货号',
+                                key: 'productnumber'
+                            },
+                            {
+                                label: '商品条码',
+                                key: 'barcode'
+                            },
+                            {
+                                label: '商品SKU编码',
+                                key: 'SKU'
+                            },
+                            {
+                                label: '商品SPUID',
+                                key: 'spu-id'
+                            },
+                            {
+                                label: '供应商款号',
+                                key: 'supplier-id'
+                            }
+                        ],
+                        inputSbody: {
+                            stylenumber: "",
+                            productnumber: "",
+                            barcode: "",
+                            SKU: "",
+                            "spu-id": "",
+                            "supplier-id": "",
+                            "category-id": "",
+                            "miaostreet-listing-status": "",
+                            "tmall-listing-status": "",
+                            supplier: "",
+                            season: "",
+                            sex: ""
+                        },
+                        Smodal: {},
+                        doNotUpload: [],
+                        categoryOptions: [],
+                        supplierOptions: [],
+                        selectedKeys: [],
+                        tkey: 0,
+                        columns: [
+                            {
+                                colKey: 'row-select',
+                                type: 'multiple',
+                                width: 50,
+                                fixed: 'left'
+                            },
+                            {
+                                title: '款号',
+                                colKey: 'stylenumber',
+                                align: 'center',
+                                width: 120,
+                                fixed: 'left'
+                            },
+                            {
+                                title: '图片',
+                                colKey: 'main-image-show',
+                                align: 'center',
+                                width: 100,
+                                fixed: 'left'
+                            },
+                            {
+                                title: '商品名称',
+                                colKey: 'name',
+                                align: 'center',
+                                width: 240
+                            },
+                            {
+                                title: '商品颜色',
+                                colKey: 'color-show',
+                                align: 'center',
+                                width: 150
+                            },
+                            {
+                                title: '可选规格',
+                                colKey: 'size-show',
+                                align: 'center',
+                                width: 180
+                            },
+                            {
+                                title: '分类',
+                                colKey: 'category',
+                                align: 'center',
+                                width: 200
+                            },
+                            {
+                                title: '首次上架时间',
+                                colKey: 'first-listing-time',
+                                align: 'center',
+                                width: 160
+                            },
+                            {
+                                title: '创建时间',
+                                colKey: 'entry-time',
+                                align: 'center',
+                                width: 160
+                            },
+                            {
+                                title: '上次更新时间',
+                                colKey: 'update-time',
+                                align: 'center',
+                                width: 160
+                            },
+                            {
+                                title: 'SPUID',
+                                colKey: 'spu-id',
+                                align: 'center',
+                                width: 150
+                            },
+                            {
+                                title: '喵街ID',
+                                colKey: 'miaostreet-id',
+                                align: 'center',
+                                width: 150
+                            },
+                            {
+                                title: '日常销售价',
+                                colKey: 'price',
+                                align: 'center',
+                                width: 100
+                            },
+                            {
+                                title: '商品运营价/成本价',
+                                colKey: 'cost',
+                                align: 'center',
+                                width: 100
+                            },
+                            {
+                                title: '供应商',
+                                colKey: 'supplier',
+                                align: 'center',
+                                width: 120
+                            },
+                            {
+                                title: '原厂编码',
+                                colKey: 'supplier-id',
+                                align: 'center',
+                                width: 120
+                            },
+                            {
+                                title: '可售库存',
+                                colKey: 'inventory',
+                                align: 'center',
+                                width: 100
+                            },
+                            {
+                                title: '适用性别',
+                                colKey: 'sex',
+                                align: 'center',
+                                width: 100
+                            },
+                            {
+                                title: '季节',
+                                colKey: 'season',
+                                align: 'center',
+                                width: 100
+                            },
+                            {
+                                title: '操作',
+                                colKey: 'operate',
+                                align: 'center',
+                                width: 160,
+                                fixed: 'right'
+                            }
+                        ],
+                        pagination: {
+                            current: 1,
+                            pageSize: localPageSize,
+                            pageSizeOption: []
+                        },
+                        deleteLoading: false
+                    }
+                },
+                methods: {
+                    doSearch: async (condition) => {
+                        app.selectedKeys = []
+
+                        let formdata = {
+                            'store-id': store,
+                            'brand': brand,
+                        }
+                        if(condition){
+                            formdata['condition'] = JSON.stringify(condition)
+                        }
+
+                        let st = (app.pagination.current - 1) * app.pagination.pageSize
+                        let num = app.pagination.pageSize
+
+                        return fetch(serve_host + '/goods/mul/get?start=' + st + '&number=' + num, {
+                            method: "POST",
+                            mode: "cors",
+                            cache: "no-cache",
+                            credentials: "same-origin",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            redirect: "follow",
+                            referrerPolicy: "no-referrer",
+                            body: JSON.stringify(formdata)
+                        })
+                        .then((response) => {
+                            return Promise.resolve(response.json())
+                        })
+                    },
+                    search: async () => {
+                        app.loading = true
+
+                        let response = await app.doSearch(app.Sbody)
+                        app.res = response.data
+                        app.total = response.total
+
+                        app.loading = false
+                        new QWebChannel(qt.webChannelTransport, function(channel) {
+                            channel.objects.webobj.show();
+                        })
+                    },
+                    reset: () => {
+                        for (const key in app.inputSbody) {
+                            app.inputSbody[key] = ''
+                        }
+                        app.Sbody = {}
+                        app.doNotUpload = []
+                    },
+                    doNotUploadChange: (value) => {
+                        delete app.Sbody['color-image']
+                        delete app.Sbody['main-image']
+                        delete app.Sbody['first-listing-time']
+                        delete app.Sbody.cost
+                        delete app.Sbody.price
+
+                        for (let i = 0; i < value.length; i++) {
+                            app.Sbody[value[i]] = null
+                        }
+                    },
+                    getCate: async () => {
+                        return fetch(serve_host + "/goods/category/get")
+                        .then((response) => {
+                            return Promise.resolve(response.json())
+                        })
+                    },
+                    initCate: async () => {
+                        app.categoryOptions = await app.getCate()
+                    },
+                    getSupplier: async () => {
+                        return fetch(serve_host + "/goods/supplier/get")
+                        .then((response) => {
+                            return Promise.resolve(response.json())
+                        })
+                    },
+                    initSupplier: async () => {
+                        app.supplierOptions = await app.getSupplier()
+                    },
+                    initPageSizeOption: () => {
+                        const lb = [10, 20, 30, 50]
+
+                        for (let i = 0; i < lb.length; i++) {
+                            app.pagination.pageSizeOption.push({
+                                label: lb[i] + ' 条/页',
+                                value: lb[i]
+                            })
+                        }
+                    },
+                    pageSizeSet: (value) => {
+                        new QWebChannel(qt.webChannelTransport, function(channel) {
+                            channel.objects.webobj.storage('PAGESIZE', 'GOODS_LIST_TABLE', value.toString());
+                        })
+                    },
+                    viewImage: (url) => {
+                        new QWebChannel(qt.webChannelTransport, function(channel) {
+                            channel.objects.webobj.openImage(url);
+                        })
+                    },
+                    cachingImage: (url) => {
+                        new QWebChannel(qt.webChannelTransport, function(channel) {
+                            channel.objects.webobj.cachingImage(url);
+                        })
+                    },
+                    copyImage: (url) => {
+                        new QWebChannel(qt.webChannelTransport, function(channel) {
+                            channel.objects.webobj.copyImage(url);
+                        })
+                        app.$message.success({
+                            content: '复制成功',
+                            placement: 'top-right'
+                        })
+                    },
+                    openUrl: (url) => {
+                        new QWebChannel(qt.webChannelTransport, function(channel) {
+                            channel.objects.webobj.openMobileUrl(url);
+                        })
+                    },
+                    saveImage: (url) => {
+                        new QWebChannel(qt.webChannelTransport, function(channel) {
+                            channel.objects.webobj.saveImage(url);
+                        })
+                    },
+                    copyUrl: (url) => {
+                        new QWebChannel(qt.webChannelTransport, function(channel) {
+                            channel.objects.webobj.copyUrl(url);
+                        })
+                        app.$message.success({
+                            content: '复制成功',
+                            placement: 'top-right'
+                        })
+                    },
+                    removeItemPost: async (stylenumbers) => {
+                        let formdata = {
+                            'store-id': store,
+                            brand: brand,
+                            stylenumbers: JSON.stringify(stylenumbers)
+                        }
+                        if(condition){
+                            formdata['condition'] = JSON.stringify(condition)
+                        }
+
+                        let st = (app.pagination.current - 1) * app.pagination.pageSize
+                        let num = app.pagination.pageSize
+
+                        return fetch(serve_host + '/goods/mul/remove', {
+                            method: "POST",
+                            mode: "cors",
+                            cache: "no-cache",
+                            credentials: "same-origin",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            redirect: "follow",
+                            referrerPolicy: "no-referrer",
+                            body: JSON.stringify(formdata)
+                        })
+                        .then((response) => {
+                            return Promise.resolve(response.json())
+                        })
+                    },
+                    removeItem: async (stylenumbers) => {
+                        app.deleteLoading = true
+                        let response = await app.removeItemPost(stylenumbers)
+
+                        if(response.result){
+                            app.$message.success('共删除' + response.data.affected_rows + '个条码')
+                            app.search()
+                        } else {
+                            app.$message.error('删除失败')
+                        }
+                        app.deleteLoading = false
+                    },
+                    editItem: (stylenumber) => {
+                        new QWebChannel(qt.webChannelTransport, function(channel) {
+                            channel.objects.webobj.editGoodItem(serve_host, store, brand, stylenumber);
+                        })
+                    },
+                    createContextMenu: (e, item) => {
+                        let menu = document.querySelector('#context-menu')
+                        app.contextMenu.item = item
+
+                        if(e.clientY + 160 + 10 > window.innerHeight){
+                            app.contextMenu.top = (e.clientY - 160 + 10) + 'px'
+                        } else {
+                            app.contextMenu.top = (e.clientY - 10) + 'px'
+                        }
+                        if(e.clientX + 220 - 5 > window.innerWidth){
+                            app.contextMenu.left = (e.clientX - 220 - 5) + 'px'
+                        } else {
+                            app.contextMenu.left = (e.clientX + 5) + 'px'
+                        }
+
+                        app.contextMenu.show = true
+                    }
+                }
+            }).use(TDesign).mount('#app')
+
+            app.search()
+            app.initCate()
+            app.initSupplier()
+            app.initPageSizeOption()
+
+            window.addEventListener('click', function(){
+                app.contextMenu.show = false
+            })
+            window.addEventListener('scroll', function(){
+                app.contextMenu.show = false
+            })
+        }
+    </script>
+</body>
+
+</html>

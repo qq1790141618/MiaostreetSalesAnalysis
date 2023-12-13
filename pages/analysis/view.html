@@ -1,0 +1,1503 @@
+﻿<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>view.html</title>
+    <script src="qrc:///pages/src/vue.global.js"></script>
+    <link rel="stylesheet" href="qrc:///pages/src/arco.css" />
+    <script src="qrc:///pages/src/arco-vue.min.js"></script>
+    <link rel="stylesheet" href="qrc:///pages/src/tdesign.min.css" />
+    <script src="qrc:///pages/src/tdesign.min.js"></script>
+    <link rel="stylesheet" href="qrc:///pages/src/windows-app.css" />
+    <link rel="stylesheet" href="qrc:///pages/src/global.css" />
+    <script src="qrc:///pages/src/echarts.js"></script>
+    <style>
+        /* 页面CSS */
+        .t-col{
+            margin-top: 12px;
+        }
+        .top-bar{
+            background: var(--td-bg-color-container);
+            border-radius: 7px;
+            border: #dddddd 1px solid;
+        }
+        .top-bar .t-anchor__line{
+            display: none;
+        }
+        .top-bar .t-anchor{
+            width: auto!important;
+        }
+        .top-bar .t-anchor__item{
+            display: inline-block;
+        }
+        .top-bar .t-anchor__item{
+        line-height: 24px;
+        padding: 2px 8px;
+        }
+        .top-bar .t-anchor__item-link{
+            vertical-align: middle;
+        }
+        .chart-box{
+            width: 100%;
+            height:450px;
+            margin-top: 30px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div class="main-content">
+            <t-affix :offset-top="15">
+                <div class="top-bar" style="border: 1px solid #efefef;">
+                    <t-space :style="{
+                        color: '#555'
+                    }" align="middle">
+                        <span
+                        :style="{
+                            lineHeight: '30px',
+                            margin: '0 20px'
+                        }">
+                            <t-icon name="chart-bar"></t-icon>
+                            数据导航：
+                        </span>
+                        <t-anchor :target-offset="55" >
+                            <t-anchor-item href="#summary" title="销售数据曲线"></t-anchor-item>
+                            <t-anchor-item href="#trend" title="销售趋势曲线"></t-anchor-item>
+                            <t-anchor-item href="#contrast" title="销售数据对比"></t-anchor-item>
+                            <t-anchor-item href="#week" title="销售周分布"></t-anchor-item>
+                            <t-anchor-item href="#hour" title="销售小时分布"></t-anchor-item>
+                            <t-anchor-item href="#category" title="品类销售数据"></t-anchor-item>
+                            <t-anchor-item href="#season" title="季节销售数据"></t-anchor-item>
+                            <t-anchor-item href="#sex" title="性别销售数据"></t-anchor-item>
+                            <t-anchor-item href="#supplier" title="供应商销售数据"></t-anchor-item>
+                        </t-anchor>
+                    </t-space>
+                </div>
+            </t-affix>
+            <t-loading
+            size="small"
+            :loading="loading"
+            :style="{
+                width: '100%',
+                minHeight: '70vh',
+                marginTop: '10px'
+            }"
+            text="销售数据加载中..."
+            >
+            </t-loading>
+            <t-row :gutter="12" v-if="!loading">
+                <t-col :span="12" id="summary">
+                    <t-card :bordered="false" title="SALES 销售数据">
+                        <t-radio-group v-model="summary.view" variant="default-filled">
+                            <t-radio-button value="chart"><t-icon name="chart-line-data-1"></t-icon>&nbsp;曲线图</t-radio-button>
+                            <t-radio-button value="table"><t-icon name="table"></t-icon>&nbsp;表格</t-radio-button>
+                        </t-radio-group>
+                        <div id="summary-chart" class="chart-box" v-show="summary.view == 'chart'"></div>
+                        <t-table
+                        class="chart-box"
+                        v-show="summary.view == 'table'"
+                        :bordered="false"
+                        :data="summary.data"
+                        :columns="summary.columns"
+                        height="450px"
+                        style="max-width: 650px; margin: 10px auto;"
+                        :sort="summary.sort"
+                        @sort-change="(val) => {
+                            sortChange(val, 'summary')
+                        }"
+                        :header-affixed-top="{
+                            offsetTop: 35,
+                            container: '#summary'
+                        }"
+                        show-sort-column-bg-color
+                        ></t-table>
+                    </t-card>
+                </t-col>
+                <t-col :span="12" id="trend">
+                    <t-card :bordered="false" title="TREND 销售趋势">
+                        <t-radio-group v-model="trend.view" variant="default-filled">
+                            <t-radio-button value="chart"><t-icon name="chart-line-multi"></t-icon>&nbsp;线面图</t-radio-button>
+                            <t-radio-button value="table"><t-icon name="table"></t-icon>&nbsp;表格</t-radio-button>
+                        </t-radio-group>
+                        <div id="trend-chart" class="chart-box" v-show="trend.view == 'chart'"></div>
+                        <t-table
+                        class="chart-box"
+                        v-show="trend.view == 'table'"
+                        :bordered="false"
+                        :data="trend.data"
+                        :columns="trend.columns"
+                        :pagination="false"
+                        height="450px"
+                        style="max-width: 650px; margin: 10px auto;"
+                        :sort="trend.sort"
+                        @sort-change="(val) => {
+                            sortChange(val, 'trend')
+                        }"
+                        :header-affixed-top="{
+                            offsetTop: 35,
+                            container: '#trend'
+                        }"
+                        show-sort-column-bg-color
+                        ></t-table>
+                    </t-card>
+                </t-col>
+                <t-col :span="12" id="contrast">
+                    <t-card :bordered="false" title="CONTRAST 销售数据对比">
+                        <t-row :gutter="12">
+                            <t-col :span="4">
+                                销售数量
+                                <div id="contrast-sales-count" class="chart-box" style="height: 240px;"></div>
+                            </t-col>
+                            <t-col :span="4">
+                                销售金额
+                                <div id="contrast-sales-amount" class="chart-box" style="height: 240px;"></div>
+                            </t-col>
+                            <t-col :span="4">
+                                退款数量
+                                <div id="contrast-refunds-count" class="chart-box" style="height: 240px;"></div>
+                            </t-col>
+                            <t-col :span="4">
+                                退款金额
+                                <div id="contrast-refunds-amount" class="chart-box" style="height: 240px;"></div>
+                            </t-col>
+                            <t-col :span="4">
+                                实销金额
+                                <div id="contrast-real-sales" class="chart-box" style="height: 240px;"></div>
+                            </t-col>
+                            <t-col :span="4">
+                                净收金额
+                                <div id="contrast-income" class="chart-box" style="height: 240px;"></div>
+                            </t-col>
+                        </t-row>
+                    </t-card>
+                </t-col>
+                <t-col :span="12" id="week">
+                    <t-card :bordered="false" title="WEEKS 销售周分布">
+                        <div id="week-chart" class="chart-box" style="height: 550px;"></div>
+                    </t-card>
+                </t-col>
+                <t-col :span="12" id="hour">
+                    <t-card :bordered="false" title="HOURS 销售小时分布">
+                        <div id="hour-chart" class="chart-box" style="height: 700px;"></div>
+                    </t-card>
+                </t-col>
+                <t-col :span="12" id="category">
+                    <t-card :bordered="false" title="CATEGORY 品类销售数据">
+                        <t-radio-group v-model="category.view" variant="default-filled">
+                            <t-radio-button value="chart"><t-icon name="chart-ring-1"></t-icon>&nbsp;旭日图</t-radio-button>
+                            <t-radio-button value="table"><t-icon name="table"></t-icon>&nbsp;表格</t-radio-button>
+                        </t-radio-group>
+                        <div id="category-chart" class="chart-box" v-show="category.view == 'chart'"></div>
+                        <t-table
+                        class="chart-box"
+                        v-show="category.view == 'table'"
+                        :bordered="false"
+                        :data="category.data"
+                        :columns="category.columns"
+                        :pagination="false"
+                        height="450px"
+                        :sort="category.sort"
+                        @sort-change="(val) => {
+                            sortChange(val, 'category')
+                        }"
+                        :header-affixed-top="{
+                            offsetTop: 35,
+                            container: '#category'
+                        }"
+                        show-sort-column-bg-color
+                        >
+                            <template #proportion-show="{ row }">
+                                <span v-if="row.proportion * 100">
+                                    {{ (row.proportion * 100).toFixed(2) }}%
+                                </span>
+                            </template>
+                            <template #after-sales-rate-show="{ row }">
+                                <span v-if="row.afterSalesRate * 100">
+                                    {{ (row.afterSalesRate * 100).toFixed(2) }}%
+                                </span>
+                            </template>
+                        </t-table>
+                    </t-card>
+                </t-col>
+                <t-col :span="12" id="season">
+                    <t-card :bordered="false" title="SEASON 季节销售数据">
+                        <t-radio-group v-model="season.view" variant="default-filled">
+                            <t-radio-button value="chart"><t-icon name="chart-ring"></t-icon>&nbsp;环状图</t-radio-button>
+                            <t-radio-button value="table"><t-icon name="table"></t-icon>&nbsp;表格</t-radio-button>
+                        </t-radio-group>
+                        <div id="season-chart" class="chart-box" v-show="season.view == 'chart'"></div>
+                        <t-table
+                        class="chart-box"
+                        v-show="season.view == 'table'"
+                        :bordered="false"
+                        :data="season.data"
+                        :columns="season.columns"
+                        :pagination="false"
+                        height="450px"
+                        :sort="season.sort"
+                        @sort-change="(val) => {
+                            sortChange(val, 'season')
+                        }"
+                        :header-affixed-top="{
+                            offsetTop: 35,
+                            container: '#season'
+                        }"
+                        show-sort-column-bg-color
+                        >
+                            <template #proportion-show="{ row }">
+                                <span v-if="row.proportion * 100">
+                                    {{ (row.proportion * 100).toFixed(2) }}%
+                                </span>
+                            </template>
+                            <template #after-sales-rate-show="{ row }">
+                                <span v-if="row.afterSalesRate * 100">
+                                    {{ (row.afterSalesRate * 100).toFixed(2) }}%
+                                </span>
+                            </template>
+                        </t-table>
+                    </t-card>
+                </t-col>
+                <t-col :span="12" id="sex">
+                    <t-card :bordered="false" title="SEX 性别销售数据">
+                        <t-radio-group v-model="sex.view" variant="default-filled">
+                            <t-radio-button value="chart"><t-icon name="chart-ring"></t-icon>&nbsp;环状图</t-radio-button>
+                            <t-radio-button value="table"><t-icon name="table"></t-icon>&nbsp;表格</t-radio-button>
+                        </t-radio-group>
+                        <div id="sex-chart" class="chart-box" v-show="sex.view == 'chart'"></div>
+                        <t-table
+                        class="chart-box"
+                        v-show="sex.view == 'table'"
+                        :bordered="false"
+                        :data="sex.data"
+                        :columns="sex.columns"
+                        :pagination="false"
+                        height="450px"
+                        :sort="sex.sort"
+                        @sort-change="(val) => {
+                            sortChange(val, 'sex')
+                        }"
+                        :header-affixed-top="{
+                            offsetTop: 35,
+                            container: '#sex'
+                        }"
+                        show-sort-column-bg-color
+                        >
+                            <template #proportion-show="{ row }">
+                                <span v-if="row.proportion * 100">
+                                    {{ (row.proportion * 100).toFixed(2) }}%
+                                </span>
+                            </template>
+                            <template #after-sales-rate-show="{ row }">
+                                <span v-if="row.afterSalesRate * 100">
+                                    {{ (row.afterSalesRate * 100).toFixed(2) }}%
+                                </span>
+                            </template>
+                        </t-table>
+                    </t-card>
+                </t-col>
+                <t-col :span="12" id="supplier">
+                    <t-card :bordered="false" title="SUPPLIER 供应商销售数据">
+                        <t-radio-group v-model="supplier.view" variant="default-filled" @change="supplierChange">
+                            <t-radio-button value="chart-a"><t-icon name="dashboard-1"></t-icon>&nbsp;矩阵图</t-radio-button>
+                            <t-radio-button value="chart-b"><t-icon name="chart-radial"></t-icon>&nbsp;环饼图</t-radio-button>
+                            <t-radio-button value="table"><t-icon name="table"></t-icon>&nbsp;表格</t-radio-button>
+                        </t-radio-group>
+                        <div id="supplier-a-chart" class="chart-box" v-show="supplier.view == 'chart-a'" style="height: 550px; max-width: 550px; margin: 10px auto;"></div>
+                        <div id="supplier-b-chart" class="chart-box" v-show="supplier.view == 'chart-b'" style="height: 550px; max-width: 550px; margin: 10px auto;"></div>
+                        <t-table
+                        class="chart-box"
+                        v-show="supplier.view == 'table'"
+                        height="480px"
+                        :bordered="false"
+                        :data="supplier.data"
+                        :columns="supplier.columns"
+                        :sort="supplier.sort"
+                        @sort-change="(val) => {
+                            sortChange(val, 'supplier')
+                        }"
+                        :header-affixed-top="{
+                            offsetTop: 36,
+                            container: '#supplier'
+                        }"
+                        show-sort-column-bg-color
+                        >
+                            <template #proportion-show="{ row }">
+                                <span v-if="row.proportion * 100">
+                                    {{ (row.proportion * 100).toFixed(2) }}%
+                                </span>
+                            </template>
+                            <template #after-sales-rate-show="{ row }">
+                                <span v-if="row.afterSalesRate * 100">
+                                    {{ (row.afterSalesRate * 100).toFixed(2) }}%
+                                </span>
+                            </template>
+                        </t-table>
+                    </t-card>
+                </t-col>
+            </t-row>
+        </div>
+    </div>
+    <script src="qrc:///pages/js/qwebchannel.js"></script>
+    <script type="text/javascript">
+        let app
+
+        function createPage(serve_host, task_id){
+            document.querySelector('#app').style.display = 'block'
+
+            app = Vue.createApp({
+                data() {
+                    return {
+                        loading: false,
+                        parameter: false,
+                        summary: {
+                            view: 'chart',
+                            sort: false,
+                            defaultSort: { sortBy: 'time', descending: false },
+                            data: [],
+                            columns: [
+                                {
+                                    title: '时间',
+                                    colKey: 'time',
+                                    ellipsis: true,
+                                    tooltip: true,
+                                    align: 'center'
+                                },
+                                {
+                                    title: '销售商品总数',
+                                    colKey: 'salesCount',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                },
+                                {
+                                    title: '销售商品总金额',
+                                    colKey: 'salesAmount',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                },
+                                {
+                                    title: '退款商品总数',
+                                    colKey: 'refundsCount',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                },
+                                {
+                                    title: '退款商品总金额',
+                                    colKey: 'refundsAmount',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                }
+                            ],
+                            tooltip: {
+                                trigger: 'axis'
+                            },
+                            legend: {
+                                data: ['销售金额', '退款金额', '净收金额']
+                            },
+                            xAxis: {
+                                type: 'category',
+                                nameLocation: 'middle',
+                                boundaryGap: false,
+                                data: []
+                            },
+                            yAxis: {
+                                type: 'value'
+                            },
+                            series: [
+                                {
+                                    type: 'line',
+                                    name: '销售金额',
+                                    data: [],
+                                    showSymbol: false,
+                                    smooth: true,
+                                    color: '#F98981'
+                                },
+                                {
+                                    type: 'line',
+                                    name: '退款金额',
+                                    data: [],
+                                    showSymbol: false,
+                                    smooth: true,
+                                    color: '#7BE188',
+                                    sortType: 'all',
+                                    sorter: true
+                                },
+                                {
+                                    type: 'line',
+                                    name: '净收金额',
+                                    data: [],
+                                    showSymbol: false,
+                                    smooth: true,
+                                    color: '#FADC6D',
+                                    sortType: 'all',
+                                    sorter: true
+                                }
+                            ]
+                        },
+                        trend: {
+                            view: 'chart',
+                            sort: false,
+                            defaultSort: { sortBy: 'time', descending: false },
+                            data: [],
+                            columns: [
+                                {
+                                    title: '时间',
+                                    colKey: 'time',
+                                    ellipsis: true,
+                                    tooltip: true,
+                                    align: 'center'
+                                },
+                                {
+                                    title: '累计实销金额',
+                                    colKey: 'accumulateRealSalesAmount',
+                                    align: 'center'
+                                },
+                                {
+                                    title: '累计净收金额',
+                                    colKey: 'accumulateIncome',
+                                    align: 'center'
+                                }
+                            ],
+                            tooltip: {
+                                trigger: 'axis'
+                            },
+                            legend: {
+                                data: ['累计实销金额', '累计净收金额']
+                            },
+                            xAxis: {
+                                type: 'category',
+                                nameLocation: 'middle',
+                                boundaryGap: false,
+                                data: []
+                            },
+                            yAxis: {
+                                type: 'value'
+                            },
+                            series: [
+                                {
+                                    type: 'line',
+                                    name: '累计净收金额',
+                                    data: [],
+                                    showSymbol: false,
+                                    smooth: true,
+                                    lineStyle: {
+                                        width: 0
+                                    },
+                                    areaStyle: {
+                                        opacity: 0.8,
+                                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                            {
+                                                offset: 0,
+                                                color: 'rgb(128, 255, 165)'
+                                            },
+                                            {
+                                                offset: 1,
+                                                color: 'rgb(1, 191, 236)'
+                                            }
+                                        ])
+                                    }
+                                }
+                            ]
+                        },
+                        contrast: {
+                            template: {
+                                tooltip: {
+                                    trigger: 'axis'
+                                },
+                                legend: {
+                                    data: ['前相同周期', '本周期']
+                                },
+                                xAxis: [
+                                    {
+                                        type: 'category',
+                                        axisTick: {
+                                            alignWithLabel: true
+                                        },
+                                        axisLine: {
+                                            onZero: false,
+                                            lineStyle: {
+                                                color: ''
+                                            }
+                                        },
+                                        axisPointer: {
+                                            label: {
+                                            formatter: function (params) {
+                                                return (
+                                                'Precipitation  ' +
+                                                params.value +
+                                                (params.seriesData.length ? '：' + params.seriesData[0].data : '')
+                                                );
+                                            }
+                                            }
+                                        },
+                                        data: []
+                                    },
+                                    {
+                                        type: 'category',
+                                        axisTick: {
+                                            alignWithLabel: true
+                                        },
+                                        axisLine: {
+                                            onZero: false,
+                                            lineStyle: {
+                                                color: ''
+                                            }
+                                        },
+                                        axisPointer: {
+                                            label: {
+                                            formatter: function (params) {
+                                                return (
+                                                'Precipitation  ' +
+                                                params.value +
+                                                (params.seriesData.length ? '：' + params.seriesData[0].data : '')
+                                                );
+                                            }
+                                            }
+                                        },
+                                        data: []
+                                    }
+                                ],
+                                yAxis: {
+                                    type: 'value'
+                                },
+                                series: [
+                                    {
+                                        xAxisIndex: 1,
+                                        type: 'line',
+                                        data: [],
+                                        showSymbol: false,
+                                        smooth: true
+                                    },
+                                    {
+                                        xAxisIndex: 0,
+                                        type: 'line',
+                                        data: [],
+                                        showSymbol: false,
+                                        smooth: true
+                                    }
+                                ]
+                            }
+                        },
+                        week: {
+                            data: [],
+                            tooltip: {
+                                trigger: 'axis'
+                            },
+                            legend: {
+                                data: ['销售金额', '退款金额']
+                            },
+                            xAxis: {
+                                type: 'value'
+                            },
+                            yAxis: {
+                                type: 'category',
+                                nameLocation: 'middle',
+                                boundaryGap: false,
+                                data: []
+                            },
+                            series: [
+                                {
+                                    type: 'bar',
+                                    name: '销售金额',
+                                    data: [],
+                                    itemStyle: {
+                                        borderRadius: 5,
+                                        borderColor: '#fff'
+                                    },
+                                    showSymbol: false,
+                                    smooth: true
+                                },
+                                {
+                                    type: 'bar',
+                                    name: '退款金额',
+                                    data: [],
+                                    itemStyle: {
+                                        borderRadius: 5,
+                                        borderColor: '#fff'
+                                    },
+                                    showSymbol: false,
+                                    smooth: true
+                                }
+                            ]
+                        },
+                        hour: {
+                            data: [],
+                            tooltip: {
+                                trigger: 'axis'
+                            },
+                            legend: {
+                                data: ['销售金额', '退款金额']
+                            },
+                            xAxis: {
+                                type: 'category',
+                                nameLocation: 'middle',
+                                boundaryGap: false,
+                                data: []
+                            },
+                            yAxis: {
+                                type: 'value'
+                            },
+                            series: [
+                                {
+                                    type: 'bar',
+                                    name: '销售金额',
+                                    stack: 'total',
+                                    data: [],
+                                    itemStyle: {
+                                        borderRadius: 5,
+                                        borderColor: '#fff'
+                                    }
+                                },
+                                {
+                                    type: 'bar',
+                                    name: '退款金额',
+                                    stack: 'total',
+                                    data: [],
+                                    itemStyle: {
+                                        borderRadius: 5,
+                                        borderColor: '#fff'
+                                    }
+                                }
+                            ]
+                        },
+                        category: {
+                            view: 'chart',
+                            sort: false,
+                            defaultSort: { sortBy: 'salesCount', descending: true },
+                            data: [],
+                            columns: [
+                                {
+                                    title: '分类',
+                                    colKey: 'name',
+                                    align: 'center',
+                                    width: 200
+                                },
+                                {
+                                    title: '分类ID',
+                                    colKey: 'id',
+                                    align: 'center'
+                                },
+                                {
+                                    title: '销售商品总数',
+                                    colKey: 'salesCount',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                },
+                                {
+                                    title: '销售数占比',
+                                    colKey: 'proportion-show',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                },
+                                {
+                                    title: '销售商品总金额',
+                                    colKey: 'salesAmount',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                },
+                                {
+                                    title: '退款商品总数',
+                                    colKey: 'refundsCount',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                },
+                                {
+                                    title: '退款商品总金额',
+                                    colKey: 'refundsAmount',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                },
+                                {
+                                    title: '退货率',
+                                    colKey: 'after-sales-rate-show',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                },
+                                {
+                                    title: '平均客单价',
+                                    colKey: 'CUP',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                }
+                            ],
+                            tooltip: {
+                                trigger: 'item'
+                            },
+                            legend: {
+                                show: false,
+                                orient: 'vertical',
+                                left: 'left'
+                            },
+                            series: [
+                                {
+                                    type: 'sunburst',
+                                    label: {
+                                        show: false
+                                    },
+                                    radius: [0, '90%'],
+                                    itemStyle: {
+                                        borderRadius: 10,
+                                        borderColor: '#fff',
+                                        borderWidth: 1
+                                    },
+                                    data: []
+                                }
+                            ]
+                        },
+                        season: {
+                            view: 'chart',
+                            sort: false,
+                            defaultSort: { sortBy: 'salesCount', descending: true },
+                            data: [],
+                            columns: [
+                                {
+                                    title: '季节',
+                                    colKey: 'name',
+                                    align: 'center'
+                                },
+                                {
+                                    title: '销售商品总数',
+                                    colKey: 'salesCount',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                },
+                                {
+                                    title: '销售数占比',
+                                    colKey: 'proportion-show',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                },
+                                {
+                                    title: '销售商品总金额',
+                                    colKey: 'salesAmount',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                },
+                                {
+                                    title: '退款商品总数',
+                                    colKey: 'refundsCount',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                },
+                                {
+                                    title: '退款商品总金额',
+                                    colKey: 'refundsAmount',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                },
+                                {
+                                    title: '退货率',
+                                    colKey: 'after-sales-rate-show',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                },
+                                {
+                                    title: '平均客单价',
+                                    colKey: 'CUP',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                }
+                            ],
+                            tooltip: {
+                                trigger: 'item'
+                            },
+                            legend: {
+                                orient: 'vertical',
+                                left: 'left'
+                            },
+                            series: [
+                                {
+                                    type: 'pie',
+                                    radius: ['50%', '90%'],
+                                    avoidLabelOverlap: false,
+                                    itemStyle: {
+                                        borderRadius: 10,
+                                        borderColor: '#fff',
+                                        borderWidth: 2
+                                    },
+                                    label: {
+                                        show: false,
+                                        position: 'center'
+                                    },
+                                    emphasis: {
+                                        label: {
+                                            show: true,
+                                            fontSize: 16,
+                                            fontWeight: 700
+                                        }
+                                    },
+                                    labelLine: {
+                                        show: false
+                                    },
+                                    data: []
+                                }
+                            ]
+                        },
+                        sex: {
+                            view: 'chart',
+                            sort: false,
+                            defaultSort: { sortBy: 'salesCount', descending: true },
+                            data: [],
+                            columns: [
+                                {
+                                    title: '性别',
+                                    colKey: 'name',
+                                    align: 'center'
+                                },
+                                {
+                                    title: '销售商品总数',
+                                    colKey: 'salesCount',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                },
+                                {
+                                    title: '销售数占比',
+                                    colKey: 'proportion-show',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                },
+                                {
+                                    title: '销售商品总金额',
+                                    colKey: 'salesAmount',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                },
+                                {
+                                    title: '退款商品总数',
+                                    colKey: 'refundsCount',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                },
+                                {
+                                    title: '退款商品总金额',
+                                    colKey: 'refundsAmount',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                },
+                                {
+                                    title: '退货率',
+                                    colKey: 'after-sales-rate-show',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                },
+                                {
+                                    title: '平均客单价',
+                                    colKey: 'CUP',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                }
+                            ],
+                            tooltip: {
+                                trigger: 'item'
+                            },
+                            legend: {
+                                orient: 'vertical',
+                                left: 'left'
+                            },
+                            series: [
+                                {
+                                    type: 'pie',
+                                    radius: ['50%', '90%'],
+                                    avoidLabelOverlap: false,
+                                    itemStyle: {
+                                        borderRadius: 10,
+                                        borderColor: '#fff',
+                                        borderWidth: 2
+                                    },
+                                    label: {
+                                        show: false,
+                                        position: 'center'
+                                    },
+                                    emphasis: {
+                                        label: {
+                                            show: true,
+                                            fontSize: 16,
+                                            fontWeight: 700
+                                        }
+                                    },
+                                    labelLine: {
+                                        show: false
+                                    },
+                                    data: []
+                                }
+                            ]
+                        },
+                        supplier: {
+                            view: 'chart-a',
+                            sort: false,
+                            defaultSort: { sortBy: 'salesCount', descending: true },
+                            data: [],
+                            columns: [
+                                {
+                                    title: '供应商名称',
+                                    colKey: 'name',
+                                    align: 'center'
+                                },
+                                {
+                                    title: '销售商品总数',
+                                    colKey: 'salesCount',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                },
+                                {
+                                    title: '销售数占比',
+                                    colKey: 'proportion',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                },
+                                {
+                                    title: '销售商品总金额',
+                                    colKey: 'salesAmount',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                },
+                                {
+                                    title: '退款商品总数',
+                                    colKey: 'refundsCount',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                },
+                                {
+                                    title: '退款商品总金额',
+                                    colKey: 'refundsAmount',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                },
+                                {
+                                    title: '退货率',
+                                    colKey: 'afterSalesRate',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                },
+                                {
+                                    title: '平均客单价',
+                                    colKey: 'CUP',
+                                    align: 'center',
+                                    sortType: 'all',
+                                    sorter: true
+                                }
+                            ],
+                            chartAObj: false,
+                            chartA: {
+                                tooltip: {
+                                    formatter: function (info) {
+                                        return info.name + '-' + info.value + '件/'
+                                    }
+                                },
+                                series: [
+                                    {
+                                        type: 'treemap',
+                                        label: {
+                                            show: true
+                                        },
+                                        breadcrumb: {
+                                            show: false
+                                        },
+                                        roam: false,
+                                        nodeClick: false,
+                                        itemStyle: {
+                                            borderRadius: 10,
+                                            borderColor: '#fff',
+                                            borderWidth: 2
+                                        },
+                                        data: []
+                                    }
+                                ]
+                            },
+                            chartBObj: false,
+                            chartB: {
+                                tooltip: {
+                                    trigger: 'item',
+                                    formatter: function (info) {
+                                        if(info.componentIndex == 0){
+                                            return info.name + ' ' + info.value + '件'
+                                        }
+                                        if(info.componentIndex == 1){
+                                            return info.name + ' ' + info.value + '元'
+                                        }
+                                    }
+                                },
+                                legend: {
+                                    show: false,
+                                    orient: 'vertical',
+                                    left: 'left'
+                                },
+                                series: [
+                                    {
+                                        type: 'pie',
+                                        label: {
+                                            show: false
+                                        },
+                                        radius: '55%',
+                                        itemStyle: {
+                                            borderRadius: 10,
+                                            borderColor: '#fff',
+                                            borderWidth: 2
+                                        },
+                                        data: []
+                                    },
+                                    {
+                                        type: 'pie',
+                                        label: {
+                                            show: false
+                                        },
+                                        radius: ['60%', '80%'],
+                                        itemStyle: {
+                                            borderRadius: 10,
+                                            borderColor: '#fff',
+                                            borderWidth: 2
+                                        },
+                                        data: []
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                },
+                methods: {
+                    getData: async () => {
+                        return fetch(serve_host + '/analysis/sales/task/result?id=' + task_id)
+                        .then((response) => {
+                            return Promise.resolve(response.json())
+                        })
+                    },
+                    initData: async () => {
+                        app.loading = true
+
+                        let response = await app.getData()
+                        let result = response.data[0]
+                        app.parameter = JSON.parse(result.parameter)
+
+                        app.loading = false
+                        // new QWebChannel(qt.webChannelTransport, function(channel) {
+                        //     channel.objects.webobj.show();
+                        // })
+                        setTimeout(() => {
+                            app.intChartA(JSON.parse(result.summary))
+                            app.intChartB(JSON.parse(result.trend))
+                            app.intChartC(JSON.parse(result.timepoint).weeks)
+                            app.intChartD(JSON.parse(result.timepoint).hours)
+                            app.intChartE(JSON.parse(result.summary), JSON.parse(result.contrast))
+                            app.intChartF(JSON.parse(result.category))
+                            app.intChartG(JSON.parse(result.season))
+                            app.intChartH(JSON.parse(result.sex))
+                            app.intChartI(JSON.parse(result.supplier))
+                        }, 100)
+                    },
+                    intChartA: (summary) => {
+                        app.summary.data = summary
+
+                        for (let i = 0; i < summary.length; i++) {
+                            app.summary.xAxis.data.push(summary[i].time)
+                            app.summary.series[0].data.push(summary[i].salesAmount)
+                            app.summary.series[1].data.push(summary[i].refundsAmount)
+                            app.summary.series[2].data.push(summary[i].income)
+                        }
+
+                        let el = document.getElementById('summary-chart')
+                        let chart = echarts.init(el)
+                        el.removeAttribute('_echarts_instance_')
+                        chart.clear()
+                        chart.setOption(app.summary)
+
+                        window.addEventListener("resize", function () {
+                            chart.resize()
+                        })
+                    },
+                    intChartB: (trend) => {
+                        app.trend.data = trend
+
+                        for (let i = 0; i < trend.length; i++) {
+                            app.trend.xAxis.data.push(trend[i].time)
+                            app.trend.series[0].data.push(trend[i].accumulateIncome)
+                        }
+
+                        let el = document.querySelector('#trend-chart')
+                        let chart = echarts.init(el)
+                        el.removeAttribute('_echarts_instance_')
+                        chart.clear()
+                        chart.setOption(app.trend)
+
+                        window.addEventListener("resize", function () {
+                            chart.resize()
+                        })
+                    },
+                    intChartC: (weeks) => {
+                        for (let i = 0; i <weeks.length; i++) {
+                            app.week.yAxis.data.push(weeks[i].time)
+                            app.week.series[0].data.push(weeks[i].salesAmount)
+                            app.week.series[1].data.push(weeks[i].refundsAmount)
+                        }
+
+                        let el = document.querySelector('#week-chart')
+                        let chart = echarts.init(el)
+                        el.removeAttribute('_echarts_instance_')
+                        chart.clear()
+                        chart.setOption(app.week)
+
+                        window.addEventListener("resize", function () {
+                            chart.resize()
+                        })
+                    },
+                    intChartD: (hours) => {
+                        for (let i = 0; i <hours.length; i++) {
+                            app.hour.xAxis.data.push(hours[i].time)
+                            app.hour.series[0].data.push(hours[i].salesAmount)
+                            app.hour.series[1].data.push(hours[i].refundsAmount * -1)
+                        }
+
+                        let el = document.querySelector('#hour-chart')
+                        let chart = echarts.init(el)
+                        el.removeAttribute('_echarts_instance_')
+                        chart.clear()
+                        chart.setOption(app.hour)
+
+                        window.addEventListener("resize", function () {
+                            chart.resize()
+                        })
+                    },
+                    intChartE: (record, contrast) => {
+                        app.contrast.sales = JSON.parse(JSON.stringify(app.contrast.template))
+                        app.contrast.sales.series[0].color = '#F9CC4540'
+                        app.contrast.sales.series[1].color = '#F9CC45'
+
+                        app.contrast.refunds = JSON.parse(JSON.stringify(app.contrast.template))
+                        app.contrast.refunds.series[0].color = '#23C34340'
+                        app.contrast.refunds.series[1].color = '#23C343'
+
+                        app.contrast.realSales = JSON.parse(JSON.stringify(app.contrast.template))
+                        app.contrast.realSales.series[0].color = '#F7656040'
+                        app.contrast.realSales.series[1].color = '#F76560'
+                        
+                        app.contrast.income = JSON.parse(JSON.stringify(app.contrast.template))
+                        app.contrast.income.series[0].color = '#FAAC7B40'
+                        app.contrast.income.series[1].color = '#FAAC7B'
+                        
+                        app.contrast.salesCount = JSON.parse(JSON.stringify(app.contrast.template))
+                        app.contrast.salesCount.series[0].color = '#E13EDB40'
+                        app.contrast.salesCount.series[1].color = '#E13EDB'
+                        
+                        app.contrast.refundsCount = JSON.parse(JSON.stringify(app.contrast.template))
+                        app.contrast.refundsCount.series[0].color = '#165DFF40'
+                        app.contrast.refundsCount.series[1].color = '#165DFF'
+
+                        for (let i = 0; i < record.length; i++) {
+                            app.contrast.sales.xAxis[0].data.push(record[i].time)
+                            app.contrast.salesCount.xAxis[0].data.push(record[i].time)
+                            app.contrast.refunds.xAxis[0].data.push(record[i].time)
+                            app.contrast.refundsCount.xAxis[0].data.push(record[i].time)
+                            app.contrast.realSales.xAxis[0].data.push(record[i].time)
+                            app.contrast.income.xAxis[0].data.push(record[i].time)
+                            
+                            app.contrast.sales.series[1].data.push(record[i].salesAmount)
+                            app.contrast.salesCount.series[1].data.push(record[i].salesCount)
+                            app.contrast.refunds.series[1].data.push(record[i].refundsAmount)
+                            app.contrast.refundsCount.series[1].data.push(record[i].refundsCount)
+                            app.contrast.realSales.series[1].data.push(record[i].realSalesAmount)
+                            app.contrast.income.series[1].data.push(record[i].refundsAmount)
+                        }
+
+                        for (let i = 0; i < contrast.length; i++) {
+                            app.contrast.sales.xAxis[1].data.push(contrast[i].time)
+                            app.contrast.salesCount.xAxis[1].data.push(contrast[i].time)
+                            app.contrast.refunds.xAxis[1].data.push(contrast[i].time)
+                            app.contrast.refundsCount.xAxis[1].data.push(contrast[i].time)
+                            app.contrast.realSales.xAxis[1].data.push(contrast[i].time)
+                            app.contrast.income.xAxis[1].data.push(contrast[i].time)
+
+                            app.contrast.sales.series[0].data.push(contrast[i].salesAmount)
+                            app.contrast.salesCount.series[0].data.push(contrast[i].salesCount)
+                            app.contrast.refunds.series[0].data.push(contrast[i].refundsAmount)
+                            app.contrast.refundsCount.series[0].data.push(contrast[i].refundsCount)
+                            app.contrast.realSales.series[0].data.push(contrast[i].realSalesAmount)
+                            app.contrast.income.series[0].data.push(contrast[i].income)
+                        }
+
+                        let plr = [
+                            {
+                                dom: document.querySelector('#contrast-sales-count'),
+                                value: 'sales'
+                            },
+                            {
+                                dom: document.querySelector('#contrast-sales-amount'),
+                                value: 'salesCount'
+                            },
+                            {
+                                dom: document.querySelector('#contrast-refunds-count'),
+                                value: 'refunds'
+                            },
+                            {
+                                dom: document.querySelector('#contrast-refunds-amount'),
+                                value: 'refundsCount'
+                            },
+                            {
+                                dom: document.querySelector('#contrast-real-sales'),
+                                value: 'realSales'
+                            },
+                            {
+                                dom: document.querySelector('#contrast-income'),
+                                value: 'income'
+                            }
+                        ]
+
+                        for (let s = 0; s < plr.length; s++) {
+                            let chart = echarts.init(plr[s].dom)
+                            plr[s].dom.removeAttribute('_echarts_instance_')
+                            chart.clear()
+                            chart.setOption(app.contrast[plr[s].value])
+                            window.addEventListener("resize", function () {
+                                chart.resize()
+                            })
+                        }
+                    },
+                    addThirdValue: (num, first_menu_index, second_menu_index, third_menu) => {
+                        if(app.category.series[0].data[first_menu_index].children[second_menu_index].children && app.category.series[0].data[first_menu_index].children[second_menu_index].children.length > 0){
+                            for (let i = 0; i < app.category.series[0].data[first_menu_index].children[second_menu_index].children.length; i++) {
+                                if(app.category.series[0].data[first_menu_index].children[second_menu_index].children[i].name == third_menu){
+                                    app.category.series[0].data[first_menu_index].children[second_menu_index].children[i].value += num
+
+                                    return Promise.resolve()
+                                } else if(i == app.category.series[0].data[first_menu_index].children[second_menu_index].children.length - 1){
+                                    app.category.series[0].data[first_menu_index].children[second_menu_index].children.push({
+                                        name: third_menu,
+                                        value: num
+                                    })
+
+                                    return Promise.resolve()
+                                }
+                            }
+                        } else {
+                            app.category.series[0].data[first_menu_index].children[second_menu_index].children = [{
+                                name: third_menu,
+                                value: num
+                            }]
+
+                            return Promise.resolve()
+                        }
+                    },
+                    addSecondValue: (num, first_menu_index, second_menu, third_menu) => {
+                        if(app.category.series[0].data[first_menu_index].children && app.category.series[0].data[first_menu_index].children.length > 0){
+                            for (let i = 0; i < app.category.series[0].data[first_menu_index].children.length; i++) {
+                                if(app.category.series[0].data[first_menu_index].children[i].name == second_menu){
+                                    app.category.series[0].data[first_menu_index].children[i].value += num
+
+                                    if(third_menu){
+                                        return Promise.resolve(app.addThirdValue(num, first_menu_index, i, third_menu))
+                                    }
+                                } else if(i == app.category.series[0].data[first_menu_index].children.length - 1){
+                                    app.category.series[0].data[first_menu_index].children.push({
+                                        name: second_menu,
+                                        value: num
+                                    })
+
+                                    if(third_menu){
+                                        return Promise.resolve(app.addThirdValue(num, first_menu_index, app.category.series[0].data[first_menu_index].children.length - 1, third_menu))
+                                    }
+                                }
+                            }
+                        } else {
+                            app.category.series[0].data[first_menu_index].children = [{
+                                name: second_menu,
+                                value: num
+                            }]
+
+                            if(third_menu){
+                                return Promise.resolve(app.addThirdValue(num, first_menu_index, 0, third_menu))
+                            }
+                        }
+                    },
+                    addFirstValue: (num, first_menu, second_menu, third_menu) => {
+                        if(app.category.series[0].data.length > 0){
+                            for (let r = 0; r < app.category.series[0].data.length; r++) {
+                                if(app.category.series[0].data[r].name == first_menu){
+                                    return Promise.resolve(app.addSecondValue(num, r, second_menu, third_menu))
+                                } else if (r == app.category.series[0].data.length - 1){
+                                    app.category.series[0].data.push({
+                                        name: first_menu
+                                    })
+
+                                    return Promise.resolve(app.addSecondValue(num, app.category.series[0].data.length - 1, second_menu, third_menu))
+                                }
+                            }
+                        } else {
+                            app.category.series[0].data.push({
+                                name: first_menu
+                            })
+
+                            return Promise.resolve(app.addSecondValue(num, 0, second_menu, third_menu))
+                        }
+                    },
+                    intChartF: (category) => {
+                        app.category.data = category
+
+                        let labels = []
+                        let datas = []
+
+                        for (let i = 0; i < category.length; i++) {
+                            let name = category[i].name || '未知分类'
+                            labels.push(name)
+                            datas.push(category[i].salesCount)
+                        }
+
+                        setTimeout(async () => {
+                            for (let i = 0; i < labels.length; i++) {
+                                let label = labels[i].split('->')
+                                await app.addFirstValue(datas[i], label[0], label[1], label[2])
+                            }
+
+                            let el = document.getElementById('category-chart')
+                            let chart = echarts.init(el)
+                            el.removeAttribute('_echarts_instance_')
+                            chart.clear()
+                            chart.setOption(app.category)
+                            window.addEventListener("resize", function () {
+                                chart.resize()
+                            })
+                        }, 100)
+                    },
+                    intChartG: (season) => {
+                        app.season.data = season
+
+                        for (let i = 0; i < season.length; i++) {
+                            app.season.series[0].data.push({
+                                name: season[i].name,
+                                value: season[i].salesCount
+                            })
+                        }
+
+                        let el = document.getElementById('season-chart')
+                        let chart = echarts.init(el)
+                        el.removeAttribute('_echarts_instance_')
+                        chart.clear()
+                        chart.setOption(app.season)
+
+                        window.addEventListener("resize", function () {
+                            chart.resize()
+                        })
+                    },
+                    intChartH: (sex) => {
+                        app.sex.data = sex
+
+                        for (let i = 0; i < sex.length; i++) {
+                            app.sex.series[0].data.push({
+                                name: sex[i].name,
+                                value: sex[i].salesCount
+                            })
+                        }
+
+                        let el = document.getElementById('sex-chart')
+                        let chart = echarts.init(el)
+                        el.removeAttribute('_echarts_instance_')
+                        chart.clear()
+                        chart.setOption(app.sex)
+
+                        window.addEventListener("resize", function () {
+                            chart.resize()
+                        })
+                    },
+                    intChartI: (supplier) => {
+                        app.supplier.data = supplier
+
+                        for (let i = 0; i < supplier.length; i++) {
+                            app.supplier.chartA.series[0].data.push({
+                                name: supplier[i].name,
+                                value: supplier[i].salesCount
+                            })
+                            app.supplier.chartB.series[0].data.push({
+                                name: supplier[i].name,
+                                value: supplier[i].salesCount
+                            })
+                            app.supplier.chartB.series[1].data.push({
+                                name: supplier[i].name,
+                                value: supplier[i].salesAmount
+                            })
+                        }
+
+                        let chartsTreemapEl = document.querySelector('#supplier-a-chart')
+                        app.supplier.chartAObj = echarts.init(chartsTreemapEl)
+                        chartsTreemapEl.removeAttribute('_echarts_instance_')
+                        app.supplier.chartAObj.clear()
+                        app.supplier.chartAObj.setOption(app.supplier.chartA)
+
+                        let chartsEl = document.querySelector('#supplier-b-chart')
+                        app.supplier.chartBObj = echarts.init(chartsEl)
+                        chartsEl.removeAttribute('_echarts_instance_')
+                        app.supplier.chartBObj.clear()
+                        app.supplier.chartBObj.setOption(app.supplier.chartB)
+                        window.addEventListener("resize", function () {
+                            app.supplier.chartBObj.resize()
+                        })
+                    },
+                    supplierChange: () => {
+                        setTimeout(() => {
+                            app.supplier.chartBObj.resize()
+                        }, 100)
+                    },
+                    sortChange: (val, key) => {
+                        app[key].sort = val
+                        if(!val || val == undefined){
+                            val = app[key].defaultSort
+                        }
+                        for (let i = 0; i < app[key].data.length; i++) {
+                            for (let t = i + 1; t < app[key].data.length; t++) {
+                                if(val.descending){
+                                    if(app[key].data[i][val.sortBy] < app[key].data[t][val.sortBy]){
+                                        let tp1 = app[key].data[i]
+                                        app[key].data[i] = app[key].data[t]
+                                        app[key].data[t] = tp1
+                                    }
+                                }
+                                if(!val.descending){
+                                    if(app[key].data[i][val.sortBy] > app[key].data[t][val.sortBy]){
+                                        let tp2 = app[key].data[i]
+                                        app[key].data[i] = app[key].data[t]
+                                        app[key].data[t] = tp2
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }).use(TDesign).mount('#app')
+
+            app.initData()
+        }
+        // createPage('https://work-serve.fixeam.com/api', '1000000050')
+    </script>
+</body>
+
+</html>

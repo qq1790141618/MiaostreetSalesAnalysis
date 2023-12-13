@@ -1,0 +1,5 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+安装包/ export-ignore
+打包/ export-ignore

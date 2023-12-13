@@ -1,0 +1,402 @@
+﻿<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>sales.html</title>
+    <script src="qrc:///pages/src/vue.global.js"></script>
+    <link rel="stylesheet" href="qrc:///pages/src/tdesign.min.css" />
+    <script src="qrc:///pages/src/tdesign.min.js"></script>
+    <link rel="stylesheet" href="qrc:///pages/src/windows-app.css" />
+    <link rel="stylesheet" href="qrc:///pages/src/global.css" />
+    <script src="qrc:///pages/src/dayjs.min.js"></script>
+    <style>
+        body{
+            background-color: #f2f3ff;
+        }
+        .bt-d{
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div class="main-content">
+            <div class="top-a">
+                <t-popup trigger="click" placement="bottom-left" v-model="popshow">
+                    <t-button
+                    >
+                        <template #icon>
+                            <t-icon name="add-circle"></t-icon>
+                        </template>
+                        创建任务
+                    </t-button>
+                    <template #content>
+                        <div
+                        :align-center="false"
+                        :style="{
+                            width: '360px',
+                            padding: '15px'
+                        }"
+                        >
+                            <t-row :gutter="[15, 10]">
+                                <t-col :span="12">
+                                    门店号：
+                                    <t-select placeholder="请选择" v-model="store" @change="(value) => {
+                                        if(value == 'HZ20'){
+                                            brand = 'DR'
+                                        }
+                                        if(value != 'HZ20' && brand == 'DR'){
+                                            brand = 'KCOR'
+                                        }
+                                    }">
+                                        <t-option value="132" label="海宁银泰城">
+                                        </t-option>
+                                        <t-option value="HZ13" label="杭州文化广场">
+                                        </t-option>
+                                        <t-option value="HZ20" label="杭州滨江银泰百货">
+                                        </t-option>
+                                    </t-select>
+                                </t-col>
+                                <t-col :span="12">
+                                    品牌：
+                                    <t-select placeholder="请选择" v-model="brand">
+                                        <t-option value="兔皇" v-if="store != 'HZ20'">
+                                        </t-option>
+                                        <t-option value="KCOR" v-if="store != 'HZ20'">
+                                        </t-option>
+                                        <t-option value="NT" v-if="store != 'HZ20'">
+                                        </t-option>
+                                        <t-option value="DR" v-if="store == 'HZ20'">
+                                        </t-option>
+                                    </t-select>
+                                </t-col>
+                                <t-col :span="12">
+                                    选择日期：
+                                    <t-date-range-picker v-model="date">
+                                    </t-date-range-picker>
+                                </t-col>
+                                <t-col :span="12">
+                                    <t-button
+                                    :loading="creating"
+                                    @click="createTask"
+                                    >
+                                        <template #icon>
+                                            <t-icon name="check"></t-icon>
+                                        </template>
+                                        确认创建
+                                    </t-button>
+                                </t-col>
+                            </t-row>
+                        </div>
+                    </template>
+                </t-popup>
+                <t-button
+                variant="outline"
+                @click="initData"
+                style="margin-left: 10px;"
+                >
+                    <template #icon>
+                        <t-icon name="refresh"></t-icon>
+                    </template>
+                    刷新
+                </t-button>
+            </div>
+            <div class="bt-d">
+                <t-card :bordered="false">
+                    <t-table
+                    size="small"
+                    :loading="loading"
+                    :columns="columns"
+                    :data="list"
+                    :pagination="{
+                        defaultCurrent: 1,
+                        defaultPageSize: 30,
+                        pageSizeOptions: [
+                            {
+                                label: '30 条/页',
+                                value: 30
+                            },
+                            {
+                                label: '50 条/页',
+                                value: 50
+                            },
+                            {
+                                label: '100 条/页',
+                                value: 100
+                            }
+                        ],
+                        total: list.length
+                    }"
+                    bordered
+                    height="calc(100vh - 175px)"
+                    @filter-change="onFilterChange"
+                    @sort-change="sortChange"
+                    :sort="sort"
+                    show-sort-column-bg-color
+                    lazy-load
+                    :key="tkey"
+                    >
+                        <template #store="{ row }">
+                            {{ JSON.parse(row.parameter).storeId }}
+                        </template>
+                        <template #storename="{ row }">
+                            <span v-if="JSON.parse(row.parameter).storeId == '132'">
+                                海宁银泰城
+                            </span>
+                            <span v-if="JSON.parse(row.parameter).storeId == 'HZ13'">
+                                杭州文化广场
+                            </span>
+                        </template>
+                        <template #brand="{ row }">
+                            {{ JSON.parse(row.parameter).brand }}
+                        </template>
+                        <template #time="{ row }">
+                            {{ JSON.parse(row.parameter).from }}
+                            至
+                            {{ JSON.parse(row.parameter).to }}
+                        </template>
+                        <template #progress="{ row }">
+                            <span v-if="row.progress == 0">
+                                未开始
+                            </span>
+                            <span v-if="row.progress > 0 && row.progress < 1">
+                                {{ row.progress * 100 }}%
+                            </span>
+                            <span v-if="row.progress == 1">
+                                完成
+                            </span>
+                        </template>
+                        <template #useTime="{ row }">
+                            <div v-if="row.useTime && row.useTime < 60">
+                                {{ row.useTime }}秒
+                            </div>
+                            <div v-if="row.useTime && row.useTime >= 60">
+                                {{ (row.useTime - row.useTime % 60) / 60 }}分{{ row.useTime % 60 }}秒
+                            </div>
+                        </template>
+                        <template #view="{ row }">
+                            <span v-if="row.status != '执行完成'">
+                                分析尚未完成
+                            </span>
+                            <t-button
+                            v-if="row.status == '执行完成'"
+                            @click="viewSalesTask(row.id)"
+                            >
+                                <template #icon>
+                                    <icon name="jump" />
+                                </template>
+                                查看分析结果
+                            </t-button>
+                        </template>
+                    </t-table>
+                </t-card>
+            </div>
+        </div>
+    </div>
+    <script src="qrc:///pages/js/qwebchannel.js"></script>
+    <script type="text/javascript">
+        let app, chart
+
+        function createPage(serve_host, store, brand){
+            document.querySelector('#app').style.display = 'block'
+
+            app = Vue.createApp({
+                data() {
+                    return {
+                        res: [],
+                        list: [],
+                        loading: false,
+                        store,
+                        brand,
+                        date: [
+                            dayjs().subtract(7, 'day'),
+                            dayjs().subtract(1, 'day')
+                        ],
+                        tkey: 0,
+                        sort: false,
+                        popshow: false,
+                        creating: false,
+                        columns: [
+                            {
+                                title: '任务编号',
+                                colKey: 'id',
+                                align: 'center',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 120
+                            },
+                            {
+                                title: '创建时间',
+                                colKey: 'createTime',
+                                align: 'center',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 180
+                            },
+                            {
+                                title: '门店号',
+                                colKey: 'store',
+                                align: 'center',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 80
+                            },
+                            {
+                                title: '门店',
+                                colKey: 'storename',
+                                align: 'center',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 135
+                            },
+                            {
+                                title: '品牌',
+                                colKey: 'brand',
+                                align: 'center',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 100
+                            },
+                            {
+                                title: '分析时间',
+                                colKey: 'time',
+                                align: 'center',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 200
+                            },
+                            {
+                                title: '任务状态',
+                                colKey: 'status',
+                                align: 'center',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 120
+                            },
+                            {
+                                title: '任务进度',
+                                colKey: 'progress',
+                                align: 'center',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 80
+                            },
+                            {
+                                title: '消耗时间',
+                                colKey: 'useTime',
+                                align: 'center',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 100
+                            },
+                            {
+                                title: '查看',
+                                colKey: 'view',
+                                align: 'center',
+                                width: 120,
+                                fixed: 'right'
+                            }
+                        ]
+                    }
+                },
+                methods: {
+                    getData: async () => {
+                        return fetch(serve_host + "/analysis/sales/query")
+                        .then((response) => {
+                            return Promise.resolve(response.json())
+                        })
+                    },
+                    initData: async () => {
+                        app.loading = true
+
+                        let response = await app.getData()
+                        app.res = response
+                        app.list = response
+
+                        app.loading = false
+
+                        new QWebChannel(qt.webChannelTransport, function(channel) {
+                            channel.objects.webobj.show();
+                        })
+                    },
+                    refreshData: async () => {
+                        let response = await app.getData()
+                        app.res = response
+                        app.list = response
+                    },
+                    sortChange: (val) => {
+                        app.sort = val
+                        if(!val || val == undefined){
+                            val = { sortBy: 'id', descending: false }
+                        }
+                        for (let i = 0; i < app.list.length; i++) {
+                            for (let t = i + 1; t < app.list.length; t++) {
+                                if(val.descending){
+                                    if(app.list[i][val.sortBy] < app.list[t][val.sortBy]){
+                                        let tp1 = app.list[i]
+                                        app.list[i] = app.list[t]
+                                        app.list[t] = tp1
+                                    }
+                                }
+                                if(!val.descending){
+                                    if(app.list[i][val.sortBy] > app.list[t][val.sortBy]){
+                                        let tp2 = app.list[i]
+                                        app.list[i] = app.list[t]
+                                        app.list[t] = tp2
+                                    }
+                                }
+                            }
+                        }
+                        app.tkey++
+                    },
+                    onFilterChange: (filters) => {
+                        app.list = JSON.parse(JSON.stringify(app.res))
+
+                        let newData = []
+                        for (let i = 0; i < app.list.length; i++) {
+                            let res = true 
+                            for (const key in filters) {
+                                if (key == 'name' && filters[key] !== '') {
+                                    if(app.list[i][key].indexOf(filters[key]) < 0){
+                                        res = false
+                                    }
+                                }
+                            }
+                            if(res){
+                                newData.push(app.list[i])
+                            }
+                        }
+
+                        app.list = newData
+                    },
+                    createTask: async () => {
+                        app.creating = true
+
+                        fetch(serve_host + "/analysis/sales/create?store-id=" + app.store + "&brand=" + app.brand + "&date=" + JSON.stringify(app.date))
+                        .then((response) => {
+                            app.creating = false
+                            app.popshow = false
+                            app.refreshData()
+                        })
+                    },
+                    viewSalesTask: (id) => {
+                        new QWebChannel(qt.webChannelTransport, function(channel) {
+                            channel.objects.webobj.viewSalesTask(serve_host, id.toString());
+                        })
+                    }
+                }
+            }).use(TDesign).mount('#app')
+
+            app.initData()
+            setInterval(() => {
+                app.refreshData()
+            }, 2000)
+        }
+        // createPage('https://work-serve.fixeam.com/api', 'HZ13', '兔皇')
+    </script>
+</body>
+
+</html>

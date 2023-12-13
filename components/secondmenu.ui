@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>SecondMenu</class>
+ <widget class="QWidget" name="SecondMenu">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>240</width>
+    <height>768</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>240</width>
+    <height>0</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>240</width>
+    <height>16777215</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout" stretch="0">
+   <property name="spacing">
+    <number>0</number>
+   </property>
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
+   <item>
+    <widget class="QWidget" name="widget_menu2" native="true">
+     <property name="styleSheet">
+      <string notr="true">#widget_menu2{
+	background-color: #ffffff;
+	border: 1px solid #f3f3f3;
+}</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,0">
+      <property name="spacing">
+       <number>0</number>
+      </property>
+      <property name="leftMargin">
+       <number>1</number>
+      </property>
+      <property name="topMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
+       <number>1</number>
+      </property>
+      <property name="bottomMargin">
+       <number>0</number>
+      </property>
+      <item>
+       <widget class="QLineEdit" name="menu_search">
+        <property name="styleSheet">
+         <string notr="true">#menu_search{
+	margin: 16px 8px;
+	padding: 5px 12px;
+	background-color: #ffffff;
+	border-radius: 5px;
+	border: 1px solid #f3f3f3;
+}
+#menu_search:hover{
+	border-color: #618dff;
+}</string>
+        </property>
+        <property name="placeholderText">
+         <string>搜索菜单 输入/查看全部</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QScrollArea" name="menu_show_scroll">
+        <property name="cursor" stdset="0">
+         <cursorShape>ArrowCursor</cursorShape>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">#menu_show_scroll{
+	border: none;
+}</string>
+        </property>
+        <property name="widgetResizable">
+         <bool>true</bool>
+        </property>
+        <widget class="QWidget" name="menu_show">
+         <property name="geometry">
+          <rect>
+           <x>0</x>
+           <y>0</y>
+           <width>238</width>
+           <height>708</height>
+          </rect>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QWidget{
+	background-color: #ffffff;
+}
+QPushButton{
+	font-size: 9.5pt;
+	padding: 8px 20px;
+	background-color: #ffffff;
+	border: 1px solid #f3f3f3;
+	border-radius: 5px;
+}
+QPushButton:hover{
+	color: #366ef4;
+	border-color: #618dff;
+}</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_3" stretch="0,1">
+          <property name="spacing">
+           <number>0</number>
+          </property>
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <widget class="QWidget" name="widget_menu_list" native="true">
+            <layout class="QVBoxLayout" name="verticalLayout_second_menus"/>
+           </widget>
+          </item>
+          <item>
+           <widget class="QWidget" name="widget_menu2_space" native="true">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">background-color: #ffffff;</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

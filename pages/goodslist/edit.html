@@ -1,0 +1,974 @@
+﻿<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>goodslist.html</title>
+    <script src="qrc:///pages/src/vue.global.js"></script>
+    <link rel="stylesheet" href="qrc:///pages/src/arco.css" />
+    <script src="qrc:///pages/src/arco-vue.min.js"></script>
+    <link rel="stylesheet" href="qrc:///pages/src/tdesign.min.css" />
+    <script src="qrc:///pages/src/tdesign.min.js"></script>
+    <link rel="stylesheet" href="qrc:///pages/src/windows-app.css" />
+    <link rel="stylesheet" href="qrc:///pages/src/global.css" />
+    <style>
+        /* 页面CSS */
+        /* body{
+            background-color: #f2f3ff;
+        } */
+        .select-box .t-col{
+            margin-top: 15px;
+        }
+        .class-title{
+            margin-top: 28px;
+            margin-bottom: 10px;
+            font-size: 15px;
+            font-weight: 700;
+        }
+        .t-upload__card-item{
+            margin-right: 8px;
+        }
+        .plus-images{
+            position: relative;
+            width: 120px;
+            height: 120px;
+            border: var(--color-neutral-3) 1px dashed;
+            color: var(--color-neutral-3);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .plus-images:hover{
+            border-color: var(--color-neutral-8);
+            color: var(--color-neutral-8);
+        }
+        .plus-content{
+            position: absolute!important;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .page-footer{
+            z-index: 100;
+            position: sticky;
+            bottom: 0;
+            left: 0;
+            background-color: var(--td-bg-color-container);
+            margin-top: 12px;
+            padding: 6px;
+            width: calc(100% - 12px);
+            border-radius: 7px;
+            box-shadow: 0px -1px 5px rgba(38, 47, 62, 0.2);
+        }
+        .table-tr{
+            position: sticky;
+            top: 0;
+            left: 0;
+            z-index: 50;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <t-loading v-show="loading" text="商品信息加载中..." size="small" style="height: 90vh; width: 100%;"></t-loading>
+        <div class="main-content" v-show="!loading">
+            <div class="class-title">
+                基本信息:
+            </div>
+            <t-card :bordered="false">
+                <t-row :gutter="8" class="select-box">
+                    <t-col :md="3" :sm="4" :xs="6">
+                        品牌:
+                        <br>
+                        {{ form.brand }}
+                    </t-col>
+                    <t-col :md="2" :sm="3" :xs="4">
+                        专柜:
+                        <br>
+                        {{ form['shoppe-id'] }}
+                    </t-col>
+                    <t-col :md="2" :sm="3" :xs="4">
+                        门店:
+                        <br>
+                        {{ form['store-id'] }}
+                    </t-col>
+                    <t-col :md="5" :sm="2" :xs="8">
+                    </t-col>
+                    <t-col :xl="2" :md="3" :sm="4" :xs="6">
+                        <span>
+                            款号:
+                        </span>
+                        <t-input
+                        v-model="form.stylenumber"
+                        >
+                        </t-input>
+                    </t-col>
+                    <t-col :xl="2" :md="3" :sm="4" :xs="6">
+                        <span>
+                            喵街ID:
+                        </span>
+                        <t-input
+                        v-model="form['miaostreet-id']"
+                        >
+                        </t-input>
+                    </t-col>
+                    <t-col :xxl="2" :xl="4" :md="6" :sm="8" :xs="12">
+                        <span>
+                            商品名称:
+                        </span>
+                        <t-input
+                        v-model="form.name"
+                        >
+                        </t-input>
+                    </t-col>
+                    <t-col :xl="2" :md="3" :sm="4" :xs="6">
+                        <span>
+                            分类 (ID:{{ form['category-id'] }}):
+                        </span>
+                        <t-cascader
+                        :size="size"
+                        :options="categoryOptions"
+                        v-model="form['category-id']"
+                        placeholder="选择分类"
+                        clearable
+                        filterable
+                        >
+                        </t-cascader>
+                    </t-col>
+                    <t-col :xl="2" :md="3" :sm="4" :xs="6">
+                        <span>
+                            首次上架时间:
+                        </span>
+                        <t-date-picker
+                        v-model="form['first-listing-time']"
+                        format="YYYY-MM-DD"
+                        style="width: 100%;"
+                        allow-input
+                        >
+                        </t-date-picker>
+                    </t-col>
+                    <t-col :xl="2" :md="3" :sm="4" :xs="6">
+                        <span>
+                            线上创建时间:
+                        </span>
+                        <t-date-picker
+                        v-model="form['entry-time']"
+                        format="YYYY-MM-DD HH:mm:ss"
+                        style="width: 100%;"
+                        allow-input
+                        enable-time-picker
+                        >
+                        </t-date-picker>
+                    </t-col>
+                    <t-col :xl="2" :md="3" :sm="4" :xs="6">
+                        <span>
+                            线上修改时间:
+                        </span>
+                        <t-date-picker
+                        v-model="form['update-time']"
+                        format="YYYY-MM-DD HH:mm:ss"
+                        style="width: 100%;"
+                        allow-input
+                        enable-time-picker
+                        >
+                        </t-date-picker>
+                    </t-col>
+                    <t-col :xl="2" :md="3" :sm="4" :xs="6">
+                        <span>
+                            季节:
+                        </span>
+                        <t-select
+                        v-model="form.season"
+                        clearable
+                        >
+                            <t-option value="春季">春季</t-option>
+                            <t-option value="夏季">夏季</t-option>
+                            <t-option value="秋季">秋季</t-option>
+                            <t-option value="冬季">冬季</t-option>
+                            <t-option value="春夏">春夏</t-option>
+                            <t-option value="春夏秋">春夏秋</t-option>
+                            <t-option value="春秋">春秋</t-option>
+                            <t-option value="秋冬">秋冬</t-option>
+                            <t-option value="春夏秋冬">春夏秋冬</t-option>
+                            <t-option value="四季">四季</t-option>
+                        </t-select>
+                    </t-col>
+                    <t-col :xl="2" :md="3" :sm="4" :xs="6">
+                        <span>
+                            性别:
+                        </span>
+                        <t-select
+                        v-model="form.sex"
+                        clearable
+                        >
+                            <t-option value="男性">男性</t-option>
+                            <t-option value="女性">女性</t-option>
+                            <t-option value="中性">男女/中性</t-option>
+                            <t-option value="男女同款">男女同款</t-option>
+                            <t-option value="儿童">儿童</t-option>
+                        </t-select>
+                    </t-col>
+                    <t-col :xl="2" :md="3" :sm="4" :xs="6">
+                        <span>
+                            供应商:
+                        </span>
+                        <t-select
+                        v-model="form.supplier"
+                        :options="supplierOptions"
+                        @create="(value) => {
+                            supplierOptions.push({
+                                label: value,
+                                value
+                            })
+                        }"
+                        creatable
+                        filterable
+                        clearable
+                        >
+                        </t-select>
+                    </t-col>
+                    <t-col :xl="2" :md="3" :sm="4" :xs="6">
+                        <span>
+                            供应商款号:
+                        </span>
+                        <t-input
+                        v-model="form['supplier-id']"
+                        >
+                        </t-input>
+                    </t-col>
+                    <t-col :xl="2" :md="3" :sm="4" :xs="6">
+                        <span>
+                            组合形式:
+                        </span>
+                        <t-select
+                        v-model="form['combination-products']"
+                        clearable
+                        >
+                            <t-option :value="1" label="组合商品"></t-option>
+                            <t-option :value="0" label="非组合商品"></t-option>
+                        </t-select>
+                    </t-col>
+                </t-row>
+            </t-card>
+            <div class="class-title">
+                主图:
+            </div>
+            <t-card :bordered="false">
+                <t-row>
+                    <t-col :span="12" v-if="form['main-image'].length > 0" style="margin-bottom: 10px;">
+                        <span>
+                            {{ '图片大小不得超过' + (2097152 / 1024 / 1024).toFixed(2) + 'MB' }}
+                        </span>
+                        <t-popconfirm
+                        theme="warning"
+                        content="确定清空已上传的图片吗? 此操作不可逆。"
+                        @confirm="() => {
+                            form['main-image'] = []
+                            $message.info('操作成功')
+                        }"
+                        >
+                            <t-button
+                            size="small"
+                            type="primary"
+                            theme="danger"
+                            style="margin-left: 10px;"
+                            >
+                                <template #icon>
+                                    <icon name="delete" />
+                                </template>
+                                清空已上传的图片
+                            </t-button>
+                        </t-popconfirm>
+                    </t-col>
+                    <t-col :span="12">
+                        <t-upload
+                        ref="drag"
+                        theme="image"
+                        :action="serve_host + '/import/upload/image'"
+                        accept="image/jpeg, image/png, image/png"
+                        :size-limit="2097152 / 1024"
+                        :format-response="(response, context) => {
+                            context.url = response.href
+                            return context
+                        }"
+                        v-model:files="form['main-image']"
+                        @preview="imagePreview"
+                        multiple
+                        >
+                        </t-upload>
+                    </t-col>
+                </t-row>
+            </t-card>
+            <div class="class-title">
+                详情图:
+            </div>
+            <t-card :bordered="false">
+                <t-row>
+                    <t-col :span="12" v-if="form['main-image'].length > 0" style="margin-bottom: 10px;">
+                        <span>
+                            {{ '图片大小不得超过' + (2097152 / 1024 / 1024).toFixed(2) + 'MB' }}
+                        </span>
+                        <t-popconfirm
+                        theme="warning"
+                        content="确定清空已上传的图片吗? 此操作不可逆。"
+                        @confirm="() => {
+                            form['detail-image'] = []
+                            $message.info('操作成功')
+                        }"
+                        >
+                            <t-button
+                            size="small"
+                            type="primary"
+                            theme="danger"
+                            style="margin-left: 10px;"
+                            >
+                                <template #icon>
+                                    <icon name="delete" />
+                                </template>
+                                清空已上传的图片
+                            </t-button>
+                        </t-popconfirm>
+                    </t-col>
+                    <t-col :span="12">
+                        <t-upload
+                        ref="drag"
+                        theme="image"
+                        :action="serve_host + '/import/upload/image'"
+                        accept="image/jpeg, image/png, image/png"
+                        :size-limit="2097152 / 1024"
+                        :format-response="(response, context) => {
+                            context.url = response.href
+                            return context
+                        }"
+                        @preview="imagePreview"
+                        v-model:files="form['detail-image']"
+                        multiple
+                        >
+                        </t-upload>
+                    </t-col>
+                </t-row>
+            </t-card>
+            <div class="class-title">
+                SKU信息:
+            </div>
+            <t-card :bordered="false">
+                <div style="overflow-x: auto; overflow-y: hidden;">
+                    <a-table
+                    size="small"
+                    :data="items"
+                    :columns="columns"
+                    :bordered="{
+                        wrapper: false,
+                        bodyCell: true
+                    }"
+                    :pagination="false"
+                    :scroll="{
+                        x: 2000,
+                        y: 450
+                    }"
+                    column-resizable
+                    :row-class="(record, rowIndex) => {
+                        if(rowIndex == 0){
+                            return 'table-tr'
+                        }
+                    }"
+                    >
+                        <template #columns>
+                            <a-table-column title="SKU编码" align="center" width="180" fixed="left">
+                                <template #cell="{ record }">
+                                    <span v-if="record == 'batch-fill'" style="font-size: 12px;">
+                                        批量填充：
+                                        <t-button
+                                        size="small"
+                                        @click="fill()"
+                                        >
+                                            {{ batchFill.productnumber ? '填充' + batchFill.productnumber : '填充全部' }}
+                                            <t-icon name="arrow-down"></t-icon>
+                                        </t-button>
+                                    </span>
+                                    <t-input align="center" size="small" v-model="record.SKU" v-if="record != 'batch-fill'"></t-input>
+                                </template>
+                            </a-table-column>
+                            <a-table-column title="商品货号" align="center" width="160" fixed="left">
+                                <template #cell="{ record, rowIndex }">
+                                    <span v-if="record == 'batch-fill'" style="font-size: 12px;">
+                                        需要填充的货号:
+                                        <t-select
+                                        size="small"
+                                        v-model="batchFill.productnumber"
+                                        :options="batchFill.products"
+                                        clearable
+                                        >
+                                        </t-select>
+                                    </span>
+                                    <t-input
+                                    size="small"
+                                    align="center"
+                                    v-model="record.productnumber"
+                                    v-if="record != 'batch-fill'"
+                                    @change="(value) => {
+                                        productnumberChange(value, rowIndex)
+                                    }"
+                                    >
+                                    </t-input>
+                                </template>
+                            </a-table-column>
+                            <a-table-column title="商品条码" align="center" width="180">
+                                <template #cell="{ record }">
+                                    <t-input align="center" size="small" v-model="record.barcode" v-if="record != 'batch-fill'"></t-input>
+                                </template>
+                            </a-table-column>
+                            <a-table-column title="颜色图" align="center" width="75">
+                                <template #cell="{ record, rowIndex }">
+                                    <t-upload
+                                    :action="serve_host + '/import/upload/image'"
+                                    @success="(content) => {
+                                        colorImageChange(content, rowIndex)
+                                    }"
+                                    accept="image/jpeg, image/png, image/png"
+                                    :size-limit="2097152 / 1024"
+                                    v-if="record != 'batch-fill'"
+                                    >
+                                        <template #file-list-display><div></div></template>
+                                        <template #trigger>
+                                            <div class="plus-images" :style="{
+                                                width: '60px',
+                                                height: '60px'
+                                            }">
+                                                <t-icon
+                                                name="add"
+                                                v-if="record['color-image'] == null"
+                                                class="plus-content"
+                                                size="24"
+                                                ></t-icon>
+                                                <t-image
+                                                v-if="record['color-image'] != null"
+                                                :src="record['color-image']"
+                                                @load="cachingImage(record['color-image'])"
+                                                style="width: 60px; height: 60px;"
+                                                fit="cover"
+                                                >
+                                                    <template #loading>
+                                                        <div class="loader-animate"/>
+                                                    </template>
+                                                </t-image>
+                                            </div>
+                                        </template>
+                                    </t-upload>
+                                </template>
+                            </a-table-column>
+                            <a-table-column title="颜色" align="center" width="100">
+                                <template #cell="{ record, rowIndex }">
+                                    <span v-if="record == 'batch-fill'">
+                                        <t-input
+                                        size="small"
+                                        align="center"
+                                        v-model="batchFill.color"
+                                        ></t-input>
+                                    </span>
+                                    <span v-if="record != 'batch-fill'">
+                                        <t-input
+                                        size="small"
+                                        align="center"
+                                        v-model="record.color"
+                                        @change="(value) => {
+                                            colorChange(value, rowIndex)
+                                        }"
+                                        ></t-input>
+                                    </span>
+                                </template>
+                            </a-table-column>
+                            <a-table-column title="颜色代码" align="center" width="100">
+                                <template #cell="{ record, rowIndex }">
+                                    <span v-if="record == 'batch-fill'">
+                                        <t-input
+                                        size="small"
+                                        align="center"
+                                        v-model="batchFill.colorid"
+                                        ></t-input>
+                                    </span>
+                                    <span v-if="record != 'batch-fill'">
+                                        <t-input
+                                        size="small"
+                                        align="center"
+                                        v-model="record.colorid"
+                                        @change="(value) => {
+                                            coloridChange(value, rowIndex)
+                                        }"
+                                        ></t-input>
+                                    </span>
+                                </template>
+                            </a-table-column>
+                            <a-table-column title="尺码" align="center" width="100">
+                                <template #cell="{ record }">
+                                    <span v-if="record == 'batch-fill'">
+                                        <t-input
+                                        size="small"
+                                        align="center"
+                                        v-model="batchFill.size"
+                                        ></t-input>
+                                    </span>
+                                    <span v-if="record != 'batch-fill'">
+                                        <t-input
+                                        size="small"
+                                        align="center"
+                                        v-model="record.size"
+                                        ></t-input>
+                                    </span>
+                                </template>
+                            </a-table-column>
+                            <a-table-column title="尺码代码" align="center" width="100">
+                                <template #cell="{ record }">
+                                    <span v-if="record == 'batch-fill'">
+                                        <t-input
+                                        size="small"
+                                        align="center"
+                                        v-model="batchFill.sizeid"
+                                        ></t-input>
+                                    </span>
+                                    <span v-if="record != 'batch-fill'">
+                                        <t-input
+                                        size="small"
+                                        align="center"
+                                        v-model="record.sizeid"
+                                        ></t-input>
+                                    </span>
+                                </template>
+                            </a-table-column>
+                            <a-table-column title="吊牌价" align="center" width="80">
+                                <template #cell="{ record }">
+                                    <span v-if="record == 'batch-fill'">
+                                        <t-input
+                                        size="small"
+                                        align="center"
+                                        v-model="batchFill.tagprice"
+                                        ></t-input>
+                                    </span>
+                                    <span v-if="record != 'batch-fill'">
+                                        <t-input
+                                        size="small"
+                                        align="center"
+                                        v-model="record.tagprice"
+                                        ></t-input>
+                                    </span>
+                                </template>
+                            </a-table-column>
+                            <a-table-column title="运营价/成本价" align="center" width="80">
+                                <template #cell="{ record }">
+                                    <span v-if="record == 'batch-fill'">
+                                        <t-input
+                                        size="small"
+                                        align="center"
+                                        v-model="batchFill.cost"
+                                        ></t-input>
+                                    </span>
+                                    <span v-if="record != 'batch-fill'">
+                                        <t-input
+                                        size="small"
+                                        align="center"
+                                        v-model="record.cost"
+                                        ></t-input>
+                                    </span>
+                                </template>
+                            </a-table-column>
+                            <a-table-column title="日常销售价" align="center" width="80">
+                                <template #cell="{ record }">
+                                    <span v-if="record == 'batch-fill'">
+                                        <t-input
+                                        size="small"
+                                        align="center"
+                                        v-model="batchFill.price"
+                                        ></t-input>
+                                    </span>
+                                    <span v-if="record != 'batch-fill'">
+                                        <t-input
+                                        size="small"
+                                        align="center"
+                                        v-model="record.price"
+                                        ></t-input>
+                                    </span>
+                                </template>
+                            </a-table-column>
+                            <a-table-column title="可售库存" align="center" width="80">
+                                <template #cell="{ record }">
+                                    <span v-if="record == 'batch-fill'">
+                                        <t-input
+                                        size="small"
+                                        align="center"
+                                        v-model="batchFill.inventory"
+                                        ></t-input>
+                                    </span>
+                                    <span v-if="record != 'batch-fill'">
+                                        <t-input
+                                        size="small"
+                                        align="center"
+                                        v-model="record.inventory"
+                                        ></t-input>
+                                    </span>
+                                </template>
+                            </a-table-column>
+                            <a-table-column title="喵街上架状态" align="center" width="120">
+                                <template #cell="{ record }">
+                                    <span v-if="record == 'batch-fill'">
+                                        <t-select
+                                        size="small"
+                                        v-model="batchFill['miaostreet-listing-status'] "
+                                        clearable
+                                        >
+                                            <t-option :value="1" label="上架"></t-option>
+                                            <t-option :value="0" label="下架"></t-option>
+                                        </t-select>
+                                    </span>
+                                    <span v-if="record != 'batch-fill'">
+                                        <t-select
+                                        size="small"
+                                        v-model="record['miaostreet-listing-status'] "
+                                        clearable
+                                        >
+                                            <t-option :value="1" label="上架"></t-option>
+                                            <t-option :value="0" label="下架"></t-option>
+                                        </t-select>
+                                    </span>
+                                </template>
+                            </a-table-column>
+                            <a-table-column title="天猫上架状态" align="center" width="120">
+                                <template #cell="{ record }">
+                                    <span v-if="record == 'batch-fill'">
+                                        <t-select
+                                        size="small"
+                                        v-model="batchFill['tmall-listing-status'] "
+                                        clearable
+                                        >
+                                            <t-option :value="1" label="上架"></t-option>
+                                            <t-option :value="0" label="下架"></t-option>
+                                        </t-select>
+                                    </span>
+                                    <span v-if="record != 'batch-fill'">
+                                        <t-select
+                                        size="small"
+                                        v-model="record['tmall-listing-status'] "
+                                        clearable
+                                        >
+                                            <t-option :value="1" label="上架"></t-option>
+                                            <t-option :value="0" label="下架"></t-option>
+                                        </t-select>
+                                    </span>
+                                </template>
+                            </a-table-column>
+                        </template>
+                    </a-table>
+                </div>
+            </t-card>
+            <div :span="12" class="page-footer">
+                <t-button
+                type="primary"
+                theme="success"
+                :loading="confirmLoading"
+                @click="confirmEdit()"
+                >
+                    提交修改
+                </t-button>
+            </div>
+        </div>
+    </div>
+    <script src="qrc:///pages/js/qwebchannel.js"></script>
+    <script type="text/javascript">
+        let app
+
+        function createPage(serve_host, store, brand, stylenumber){
+            document.querySelector('#app').style.display = 'block'
+
+            app = Vue.createApp({
+                data() {
+                    return {
+                        serve_host,
+                        form: {
+                            name: '',
+                            stylenumber: '',
+                            category: '',
+                            'category-id': '',
+                            'spu-id': '',
+                            'miaostreet-id': '',
+                            'entry-time': '',
+                            'update-time': '',
+                            'first-listing-time': '',
+                            season: '',
+                            sex: '',
+                            supplier: '',
+                            'supplier-id': '',
+                            'shoppe-id': '',
+                            'store-id': '',
+                            'combination-products': 0,
+                            'online-model-number': '',
+                            brand: '',
+                            'main-image': [],
+                            'detail-image': []
+                        },
+                        items: [],
+                        loading: false,
+                        categoryOptions: [],
+                        supplierOptions: [],
+                        batchFill: {
+                            productsAdded: [],
+                            products: []
+                        },
+                        confirmLoading: false
+                    }
+                },
+                methods: {
+                    getData: async () => {
+                        return fetch(serve_host + '/goods/item/get', {
+                            method: "POST",
+                            mode: "cors",
+                            cache: "no-cache",
+                            credentials: "same-origin",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            redirect: "follow",
+                            referrerPolicy: "no-referrer",
+                            body: JSON.stringify({
+                                'store-id': store,
+                                brand,
+                                stylenumber
+                            })
+                        })
+                        .then((response) => {
+                            return Promise.resolve(response.json())
+                        })
+                    },
+                    initData: async () => {
+                        app.loading = true
+
+                        let response = await app.getData()
+                        app.items = ['batch-fill']
+                        for (let r = 0; r < response.length; r++) {
+                            app.items.push(JSON.parse(JSON.stringify(response[r])))
+                        }
+
+                        for (const key in app.form) {
+                            if(response[0][key] != null && response[0][key] != '' && (key == 'main-image' || key == 'detail-image')){
+                                app.form[key] = JSON.parse(response[0][key])
+
+                                for (let i = 0; i < app.form[key].length; i++) {
+                                    app.form[key][i] = {
+                                        uid: i + 1,
+                                        name: (i + 1) + '.jpg',
+                                        status: "done",
+                                        url: app.form[key][i],
+                                        percent: 1,
+                                        response: JSON.stringify({
+                                            result: true,
+                                            href: app.form[key][i]
+                                        })
+                                    }
+                                }
+                            } else if(key == 'category-id') {
+                                app.form[key] = response[0][key] * 1
+                            } else {
+                                app.form[key] = response[0][key]
+                            }
+                        }
+
+                        app.loading = false
+                        setTimeout(() => {
+                            app.addBatchFillProducts()
+                            new QWebChannel(qt.webChannelTransport, function(channel) {
+                                channel.objects.webobj.show();
+                            })
+                        }, 100)
+                    },
+                    getCate: async () => {
+                        return fetch(serve_host + "/goods/category/get")
+                        .then((response) => {
+                            return Promise.resolve(response.json())
+                        })
+                    },
+                    initCate: async () => {
+                        app.categoryOptions = await app.getCate()
+                    },
+                    getSupplier: async () => {
+                        return fetch(serve_host + "/goods/supplier/get")
+                        .then((response) => {
+                            return Promise.resolve(response.json())
+                        })
+                    },
+                    initSupplier: async () => {
+                        app.supplierOptions = await app.getSupplier()
+                        app.supplierOptions.splice(0, 1)
+                    },
+                    imagePreview: (option) => {
+                        let url = option.file.url
+                        app.viewImage(url)
+                        console.log(url.stop.stop)
+                    },
+                    viewImage: (url) => {
+                        new QWebChannel(qt.webChannelTransport, function(channel) {
+                            channel.objects.webobj.openImage(url);
+                        })
+                    },
+                    cachingImage: (url) => {
+                        new QWebChannel(qt.webChannelTransport, function(channel) {
+                            channel.objects.webobj.cachingImage(url);
+                        })
+                    },
+                    addBatchFillProducts: () => {
+                        app.batchFill.productsAdded = []
+                        app.batchFill.products = []
+
+                        for (let i = 0; i < app.items.length; i++) {
+                            if(app.batchFill.productsAdded.indexOf(app.items[i].productnumber) < 0){
+                                app.batchFill.productsAdded.push(app.items[i].productnumber)
+                                app.batchFill.products.push({
+                                    label: app.items[i].productnumber,
+                                    value: app.items[i].productnumber
+                                })
+                            }
+                        }
+                    },
+                    productnumberChange: (value, rowKey) => {
+                        for(let i = 1; i < app.items.length; i++){
+                            if(i == rowKey){
+                                continue
+                            }
+                            if(app.items[i].color == app.items[rowKey].color){
+                                app.items[i].productnumber = value
+                            }
+                        }
+                        app.addBatchFillProducts()
+                    },
+                    colorChange: (value, rowKey) => {
+                        for(let i = 1; i < app.items.length; i++){
+                            if(i == rowKey){
+                                continue
+                            }
+                            if(app.items[i].productnumber == app.items[rowKey].productnumber){
+                                app.items[i].color = value
+                            }
+                        }
+                    },
+                    coloridChange: (value, rowKey) => {
+                        for(let i = 1; i < app.items.length; i++){
+                            if(i == rowKey){
+                                continue
+                            }
+                            if(app.items[i].color == app.items[rowKey].color){
+                                app.items[i].colorid = value
+                            }
+                        }
+                    },
+                    colorImageChange: (content, rowKey) => {
+                        let value = content.file.response.href
+
+                        for(let i = 1; i < app.items.length; i++){
+                            if(app.items[i].color == app.items[rowKey].color){
+                                app.items[i]['color-image'] = value
+                            }
+                        }
+                    },
+                    fill: () => {
+                        for (let i = 0; i < app.items.length; i++) {
+                            if(app.batchFill.productnumber && app.items[i].productnumber != app.batchFill.productnumber){
+                                continue
+                            }
+
+                            for (const key in app.batchFill) {
+                                if((app.batchFill[key] == 0 || (app.batchFill[key] != null && app.batchFill[key] != '')) && key != 'products' && key != 'productsAdded' && key != 'productnumber'){
+                                    app.items[i][key] = app.batchFill[key]
+                                }
+                            }
+                        }
+                    },
+                    computerEdit: async () => {
+                        let ditt = []
+
+                        for (let r = 0; r < app.form['main-image'].length; r++) {
+                            if(app.form['main-image'][r]){
+                                app.form['main-image'][r] = app.form['main-image'][r].url
+                            }
+                        }
+                        for (let s = 0; s < app.form['detail-image'].length; s++) {
+                            if(app.form['detail-image'][s]){
+                                app.form['detail-image'][s] = app.form['detail-image'][s].url
+                            }
+                        }
+
+                        for (let i = 1; i < app.items.length; i++) {
+                            let skuitem = JSON.parse(JSON.stringify(app.items[i]))
+
+                            for (const key in app.form) {
+                                if(key != 'barcode'){
+                                    if(key == 'main-image' || key == 'detail-image'){
+                                        skuitem[key] = JSON.stringify(app.form[key])
+                                    } else {
+                                        skuitem[key] = app.form[key]
+                                    }
+                                }
+                            }
+
+                            ditt.push(skuitem)
+                        }
+
+                        return Promise.resolve(ditt)
+                    },
+                    uploadEditCreate: async (res) => {
+                        return fetch(serve_host + '/import/task/create?name=morifySku', {
+                            method: "POST",
+                            mode: "cors",
+                            cache: "no-cache",
+                            credentials: "same-origin",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            redirect: "follow",
+                            referrerPolicy: "no-referrer",
+                            body: JSON.stringify(res)
+                        })
+                        .then((response) => {
+                            return Promise.resolve(response.json())
+                        })
+                    },
+                    uploadEditRecord: async () => {
+                        return fetch(serve_host + '/user/action/log?content=' +
+                            JSON.stringify({
+                                uid: user.inform.uid,
+                                time: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+                                type: 'GOODS',
+                                name: 'EDIT',
+                                inform: props.stylenumber
+                            })
+                        )
+                        .then(response => {
+                            return Promise.resolve(response)
+                        })
+                    },
+                    uploadEdit: async () => {
+                        let res = await app.computerEdit()
+                        let taskid = await app.uploadEditCreate(res)
+
+                        return fetch(serve_host + '/import/task/sku/start?id=' + taskid)
+                        .then(response => {
+                            return Promise.resolve(response)
+                        })
+                    },
+                    confirmEdit: async () => {
+                        app.confirmLoading = true
+                        let res = await app.uploadEdit()
+                        app.confirmLoading = false
+                        new QWebChannel(qt.webChannelTransport, function(channel) {
+                            channel.objects.webobj.close();
+                        })
+                    }
+                }
+            }).use(TDesign).use(ArcoVue).mount('#app')
+
+            app.initCate()
+            app.initSupplier()
+            app.initData()
+        }
+        // createPage('http://192.168.1.50:8120/api', 'HZ13', '兔皇', 'TW98X5214')
+    </script>
+</body>
+
+</html>

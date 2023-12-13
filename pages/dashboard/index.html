@@ -1,0 +1,491 @@
+﻿<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>dashboard.html</title>
+    <script src="qrc:///pages/src/vue.global.js"></script>
+    <link rel="stylesheet" href="qrc:///pages/src/tdesign.min.css" />
+    <script src="qrc:///pages/src/tdesign.min.js"></script>
+    <link rel="stylesheet" href="qrc:///pages/src/windows-app.css" />
+    <link rel="stylesheet" href="qrc:///pages/src/global.css" />
+    <script src="qrc:///pages/src/echarts.js"></script>
+</head>
+
+<body>
+    <div id="app">
+        <t-loading v-show="!res" text="仪表盘数据加载中..." size="small" style="height: 90vh; width: 100%;"></t-loading>
+        <div class="main-content" v-show="res">
+            <t-row :gutter="16">
+                <t-col :span="12">
+                    <t-card :bordered="false">
+                        <template #title>
+                            <img
+                            height="20"
+                            v-if="brand == '兔皇'"
+                            src="https://cdn.fixeam.com/tw/TW.png"
+                            />
+                            <img
+                            height="20"
+                            v-if="brand == 'NT'"
+                            src="https://cdn.fixeam.com/tw/NT.png"
+                            />
+                            <img
+                            height="20"
+                            v-if="brand == 'KCOR'"
+                            src="https://cdn.fixeam.com/tw/KCOR.png"
+                            />
+                            <img
+                            height="20"
+                            v-if="brand == 'DR'"
+                            src="https://cdn.fixeam.com/tw/DR.png"
+                            />
+                        </template>
+                        <t-row :style="{
+                            marginBottom: '15px'
+                        }">
+                            <t-col :span="3" :style="{
+                                textAlign: 'center'
+                            }">
+                                <div :style="{
+                                    marginBottom: '8px',
+                                    fontSize: '14px',
+                                    color: '#999',
+                                    lineHeight: '2.4'
+                                }">
+                                    年度销售数量
+                                </div>
+                                <div>
+                                    <span :style="{
+                                        fontWeight: '500',
+                                        fontSize: '26px'
+                                    }">
+                                        {{ res.salesCount }}
+                                    </span>
+                                    <span>
+                                        件
+                                    </span>
+                                </div>
+                            </t-col>
+                            <t-col :span="3" :style="{
+                                textAlign: 'center'
+                            }">
+                                <div :style="{
+                                    marginBottom: '8px',
+                                    fontSize: '14px',
+                                    color: '#999',
+                                    lineHeight: '2.4'
+                                }">
+                                    年度净收金额
+                                </div>
+                                <div>
+                                    <span>
+                                        ￥
+                                    </span>
+                                    <span :style="{
+                                        fontWeight: '500',
+                                        fontSize: '26px'
+                                    }">
+                                        {{ (res.income / 10000).toFixed(2) }}
+                                    </span>
+                                    <span>
+                                        万元
+                                    </span>
+                                </div>
+                            </t-col>
+                            <t-col :span="3" :style="{
+                                textAlign: 'center'
+                            }">
+                                <div :style="{
+                                    marginBottom: '8px',
+                                    fontSize: '14px',
+                                    color: '#999',
+                                    lineHeight: '2.4'
+                                }">
+                                    年度订单数量
+                                </div>
+                                <div>
+                                    <span :style="{
+                                        fontWeight: '500',
+                                        fontSize: '26px'
+                                    }">
+                                        {{ res.ordersCount }}
+                                    </span>
+                                    <span>
+                                        单
+                                    </span>
+                                </div>
+                            </t-col>
+                            <t-col :span="3" :style="{
+                                textAlign: 'center'
+                            }">
+                                <div :style="{
+                                    marginBottom: '8px',
+                                    fontSize: '14px',
+                                    color: '#999',
+                                    lineHeight: '2.4'
+                                }">
+                                    年度上新款数
+                                </div>
+                                <div>
+                                    <span :style="{
+                                        fontWeight: '500',
+                                        fontSize: '26px'
+                                    }">
+                                        {{ res.productsCount }}
+                                    </span>
+                                    <span>
+                                        SPU
+                                    </span>
+                                </div>
+                            </t-col>
+                        </t-row>
+                    </t-card>
+                </t-col>
+                <t-col :span="12" style="margin-top: 12px;">
+                    <t-card :bordered="false" v-if="res.nearlyWeek">
+                        <template #title>
+                            <t-icon name="chart"></t-icon>
+                            近期数据
+                        </template>
+                        <div id="mainChart" style="width: 100%; height: 450px;"></div>
+                    </t-card>
+                </t-col>
+                <t-col :sm="12" :lg="6" style="margin-top: 12px;" v-if="res.ms && res.ms.product">
+                    <t-card :bordered="false" id="goods-rank">
+                        <template #title>
+                            <span>
+                                <t-icon name="chart-line"></t-icon>
+                                近期款式排行
+                            </span>
+                            <t-tooltip content="取值范围为最近15个自然日, 计算的数据包含取消订单。">
+                                <t-icon name="help-circle" :style="{
+                                    color: '#aaa',
+                                    cursor: 'pointer'
+                                }"/>
+                            </t-tooltip>
+                        </template>
+                        <t-table
+                        :key="gkey"
+                        :data="res.ms.product"
+                        :columns="[
+                            {
+                                title: '款号',
+                                colKey: 'stylenumber',
+                                width: 100,
+                                ellipsis: true,
+                                tooltip: true,
+                                align: 'center'
+                            },
+                            {
+                                title: '销售数量',
+                                colKey: 'salesCount',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 100,
+                                align: 'center'
+                            },
+                            {
+                                title: '销售金额',
+                                colKey: 'salesAmount',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 100,
+                                align: 'center'
+                            },
+                            {
+                                title: '退款数量',
+                                colKey: 'refundsCount',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 100,
+                                align: 'center'
+                            },
+                            {
+                                title: '退款金额',
+                                colKey: 'refundsAmount',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 100,
+                                align: 'center'
+                            }
+                        ]"
+                        :bordered="false"
+                        :pagination="false"
+                        @sort-change="gsortChange"
+                        :sort="gsort"
+                        show-sort-column-bg-color
+                        height="450px"
+                        :header-affixed-top="{
+                            offsetTop: 30,
+                            container: '#goods-rank'
+                        }"
+                        ></t-table>
+                    </t-card>
+                </t-col>
+                <t-col :sm="12" :lg="6" style="margin-top: 12px;" v-if="res.ms && res.ms.supplier">
+                    <t-card :bordered="false" id="suppliers-rank">
+                        <template #title>
+                            <span>
+                                <t-icon name="chart-bubble"></t-icon>
+                                近期供应商排行
+                            </span>
+                            <t-tooltip content="取值范围为最近15个自然日, 计算的数据包含取消订单。">
+                                <t-icon name="help-circle" :style="{
+                                    color: '#aaa',
+                                    cursor: 'pointer'
+                                }"/>
+                            </t-tooltip>
+                        </template>
+                        <t-table
+                        :key="gkey"
+                        :data="res.ms.supplier"
+                        :columns="[
+                            {
+                                title: '供应商名称',
+                                colKey: 'supplier',
+                                width: 100,
+                                ellipsis: true,
+                                tooltip: true,
+                                align: 'center'
+                            },
+                            {
+                                title: '销售数量',
+                                colKey: 'salesCount',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 100,
+                                align: 'center'
+                            },
+                            {
+                                title: '销售金额',
+                                colKey: 'salesAmount',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 100,
+                                align: 'center'
+                            },
+                            {
+                                title: '退款数量',
+                                colKey: 'refundsCount',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 100,
+                                align: 'center'
+                            },
+                            {
+                                title: '退款金额',
+                                colKey: 'refundsAmount',
+                                sortType: 'all',
+                                sorter: true,
+                                width: 100,
+                                align: 'center'
+                            }
+                        ]"
+                        :bordered="false"
+                        :pagination="false"
+                        @sort-change="ssortChange"
+                        :sort="ssort"
+                        show-sort-column-bg-color
+                        height="450px"
+                        :header-affixed-top="{
+                            offsetTop: 30,
+                            container: '#suppliers-rank'
+                        }"
+                        ></t-table>
+                    </t-card>
+                </t-col>
+            </t-row>
+        </div>
+    </div>
+    <script src="qrc:///pages/js/qwebchannel.js"></script>
+    <script type="text/javascript">
+        let app, chart
+
+        function createPage(serve_host, store, brand){
+            document.querySelector('#app').style.display = 'block'
+
+            app = Vue.createApp({
+                data() {
+                    return {
+                        res: false,
+                        brand,
+                        gsort: false,
+                        gkey: 0,
+                        ssort: false,
+                        skey: 0
+                    }
+                },
+                methods: {
+                    getData: async () => {
+                        let date = new Date()
+                        date.setDate(date.getDate() - 1)
+                        app.dateIs = date.toISOString().split("T")[0]
+
+                        return fetch(serve_host + "/analysis/annual-overview?store-id=" + store + "&brand=" + brand)
+                        .then((response) => {
+                            return Promise.resolve(response.json())
+                        })
+                    },
+                    initData: async () => {
+                        app.res = await app.getData()
+
+                        for (let i = 0; i < app.res.ms.product.length; i++) {
+                            for (let r = i + 1; r < app.res.ms.product.length; r++) {
+                                if(app.res.ms.product[i].salesCount < app.res.ms.product[r].salesCount){
+                                    let temp = app.res.ms.product[i]
+                                    app.res.ms.product[i] = app.res.ms.product[r]
+                                    app.res.ms.product[r] = temp
+                                }
+                            }
+                        }
+
+                        for (let i = 0; i < app.res.ms.supplier.length; i++) {
+                            for (let r = i + 1; r < app.res.ms.supplier.length; r++) {
+                                if(app.res.ms.supplier[i].salesCount < app.res.ms.supplier[r].salesCount){
+                                    let temp = app.res.ms.supplier[i]
+                                    app.res.ms.supplier[i] = app.res.ms.supplier[r]
+                                    app.res.ms.supplier[r] = temp
+                                }
+                            }
+                        }
+
+                        app.initChart()
+                        new QWebChannel(qt.webChannelTransport, function(channel) {
+                            channel.objects.webobj.show();
+                        })
+                    },
+                    initChart: () => {
+                        let chartsData = {
+                            tooltip: {
+                                trigger: 'axis'
+                            },
+                            legend: {
+                                data: ['销售金额', '退款金额', '净收金额']
+                            },
+                            xAxis: {
+                                type: 'category',
+                                nameLocation: 'middle',
+                                boundaryGap: false,
+                                data: []
+                            },
+                            yAxis: {
+                                type: 'value'
+                            },
+                            series: [
+                                {
+                                    type: 'bar',
+                                    barMaxWidth: 30,
+                                    itemStyle: {
+                                        borderRadius: 5,
+                                    },
+                                    name: '销售金额',
+                                    data: [],
+                                    showSymbol: false,
+                                    smooth: true
+                                },
+                                {
+                                    type: 'bar',
+                                    barMaxWidth: 30,
+                                    itemStyle: {
+                                        borderRadius: 5,
+                                    },
+                                    name: '退款金额',
+                                    data: [],
+                                    showSymbol: false,
+                                    smooth: true
+                                },
+                                {
+                                    type: 'line',
+                                    name: '净收金额',
+                                    data: [],
+                                    showSymbol: false,
+                                    smooth: true
+                                }
+                            ]
+                        }
+
+                        let lin = app.res.nearlyWeek
+                        for (let i = 0; i < lin.length; i++) {
+                            chartsData.xAxis.data.push(lin[i].time)
+
+                            chartsData.series[0].data.push(lin[i].salesAmount)
+                            chartsData.series[1].data.push(lin[i].refundsAmount)
+                            chartsData.series[2].data.push(lin[i].income)
+                        }
+
+                        setTimeout(() => {
+                            charts = echarts.init(document.querySelector('#mainChart'))
+                            document.querySelector('#mainChart').removeAttribute('_echarts_instance_')
+                            charts.clear()
+                            charts.setOption(chartsData)
+
+                            window.addEventListener("resize", function () {
+                                charts.resize()
+                            })
+                        }, 100)
+                    },
+                    gsortChange: (val) => {
+                        app.gsort = val
+
+                        if(!val){
+                            val = { sortBy: 'salesCount', descending: true}
+                        }
+
+                        for (let i = 0; i < app.res.ms.product.length; i++) {
+                            for (let t = i + 1; t < app.res.ms.product.length; t++) {
+                                if(val.descending){
+                                    if(app.res.ms.product[i][val.sortBy] < app.res.ms.product[t][val.sortBy]){
+                                        let tp1 = app.res.ms.product[i]
+                                        app.res.ms.product[i] = app.res.ms.product[t]
+                                        app.res.ms.product[t] = tp1
+                                    }
+                                }
+                                if(!val.descending){
+                                    if(app.res.ms.product[i][val.sortBy] > app.res.ms.product[t][val.sortBy]){
+                                        let tp2 = app.res.ms.product[i]
+                                        app.res.ms.product[i] = app.res.ms.product[t]
+                                        app.res.ms.product[t] = tp2
+                                    }
+                                }
+                            }
+                        }
+                        app.gkey++
+                    },
+                    ssortChange: (val) => {
+                        app.ssort = val
+
+                        if(!val){
+                            val = { sortBy: 'salesCount', descending: true}
+                        }
+
+                        for (let i = 0; i < app.res.ms.supplier.length; i++) {
+                            for (let t = i + 1; t < app.res.ms.supplier.length; t++) {
+                                if(val.descending){
+                                    if(app.res.ms.supplier[i][val.sortBy] < app.res.ms.supplier[t][val.sortBy]){
+                                        let tp1 = app.res.ms.supplier[i]
+                                        app.res.ms.supplier[i] = app.res.ms.supplier[t]
+                                        app.res.ms.supplier[t] = tp1
+                                    }
+                                }
+                                if(!val.descending){
+                                    if(app.res.ms.supplier[i][val.sortBy] > app.res.ms.supplier[t][val.sortBy]){
+                                        let tp2 = app.res.ms.supplier[i]
+                                        app.res.ms.supplier[i] = app.res.ms.supplier[t]
+                                        app.res.ms.supplier[t] = tp2
+                                    }
+                                }
+                            }
+                        }
+                        app.skey++
+                    }
+                }
+            }).use(TDesign).mount('#app')
+
+            app.initData()
+        }
+    </script>
+</body>
+
+</html>
